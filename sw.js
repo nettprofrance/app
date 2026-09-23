@@ -14,11 +14,22 @@ const FICHIERS = [
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-512.png',
-  './apple-touch-icon.png'
+  './apple-touch-icon.png',
+  './01-goutte-bleue.png',
+  './02-courbe-verte.png',
+  './03-feuille-gauche.png',
+  './04-feuille-droite.png',
+  './05-etoiles.png',
+  './06-texte-nettpro-france.png',
+  './07-slogan-proprete-multiservices.png'
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(FICHIERS)));
+  // addAll echoue en entier si un seul fichier manque : on ajoute un par un
+  // pour qu'une image absente ne bloque pas toute la mise en cache.
+  event.waitUntil(caches.open(VERSION).then(cache =>
+    Promise.all(FICHIERS.map(f => cache.add(f).catch(() => {})))
+  ));
   // Prend la main immediatement : sans cela, une nouvelle version attendait
   // que tous les onglets soient fermes, et les agents gardaient l'ancienne.
   self.skipWaiting();
