@@ -83,6 +83,7 @@ body {
   </div>
   <div class="roue"></div>
   <p>Chargement de NETTPRO…</p>
+  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 4</p>
 </div>
 
 <div id="hors-ligne">Pas de connexion internet. L'application se rechargera dès le retour du réseau.</div>
@@ -91,7 +92,7 @@ body {
      sert au pointage, l'appareil photo au scan et aux photos de preuve. -->
 <iframe id="appli" title="NETTPRO"
   allow="geolocation; camera; microphone; clipboard-read; clipboard-write; fullscreen"
-  src="https://script.google.com/macros/s/AKfycbz2vZcGZ2ewoNC1iP6gknl2--qdAPSC5fWh_vTH5LS1TGuIxwMkAogPrRyamQuHtx55lA/exec">
+  data-base="https://script.google.com/macros/s/AKfycbz2vZcGZ2ewoNC1iP6gknl2--qdAPSC5fWh_vTH5LS1TGuIxwMkAogPrRyamQuHtx55lA/exec">
 </iframe>
 <div id="installer" role="dialog" aria-label="Installer l'application">
   <div class="ligne">
@@ -110,7 +111,14 @@ body {
 
 <script>
 (function() {
+  // Numero de version de la coquille : visible au demarrage, il evite d'avoir
+  // a deviner si une mise a jour est bien arrivee sur le telephone.
+  var VERSION_COQUILLE = 4;
+
   var appli = document.getElementById('appli');
+  // L'application installee gardait en memoire l'ancienne page Apps Script.
+  // Le parametre de version force une page fraiche a chaque nouvelle coquille.
+  appli.src = appli.dataset.base + '?v=' + VERSION_COQUILLE;
   var chargement = document.getElementById('chargement');
   var horsLigne = document.getElementById('hors-ligne');
   var debutAnimation = Date.now();
