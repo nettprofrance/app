@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NETTPRO</title>
 <meta name="theme-color" content="#1565c0">
 <meta name="description" content="Pointage, planning et suivi des interventions NETTPRO.">
@@ -14,47 +14,16 @@
 <meta name="apple-mobile-web-app-title" content="NETTPRO">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
-html, body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #fff;
-}
-
-body {
-  padding: 0;
-}
-
-#appli {
-  position: fixed;
-  inset: 0;
-  display: block;
-  width: 100vw;
-  height: 100dvh;
-  border: 0;
-}
-
-  #chargement { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; overflow: hidden; background: radial-gradient(circle at 50% 42%, #ffffff 0, #f5fbff 52%, #eef8f2 100%); z-index: 5; transition: opacity .35s ease; }
-  .logo-animation { position: relative; width: min(94vw, 640px); aspect-ratio: 16 / 9; }
-  .logo-animation img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-  .calque-goutte { clip-path: inset(100% 0 0 0); animation: dessinerBasHaut .78s cubic-bezier(.2,.75,.2,1) .10s forwards; }
-  .calque-courbe { clip-path: inset(100% 0 0 0); animation: dessinerBasHaut .62s cubic-bezier(.2,.8,.2,1) .65s forwards; }
-  .calque-feuille-gauche { opacity: 0; transform: scale(.15) rotate(18deg); transform-origin: 10.8% 48.7%; animation: ouvrirFeuilleGauche .55s cubic-bezier(.2,1.25,.4,1) 1.15s forwards; }
-  .calque-feuille-droite { opacity: 0; transform: scale(.15) rotate(-16deg); transform-origin: 20.3% 44%; animation: ouvrirFeuilleDroite .58s cubic-bezier(.2,1.25,.4,1) 1.28s forwards; }
-  .calque-etoiles { opacity: 0; transform: scale(.45); transform-origin: 26% 54%; animation: scintiller .62s ease-out 1.72s forwards; }
-  .calque-texte { opacity: 0; transform: translateY(18px); animation: monterTexte .58s cubic-bezier(.2,.8,.2,1) 2.05s forwards; }
-  .calque-slogan { opacity: 0; transform: translateY(12px); animation: monterTexte .48s ease-out 2.48s forwards; }
-  #chargement p { margin: -4px 0 0; color: #64748b; font-size: 13px; letter-spacing: .03em; opacity: 0; animation: afficherChargement .25s ease 2.82s forwards; }
-  .roue { width: 22px; height: 22px; border: 3px solid #dbeafe; border-top-color: #287cba; border-radius: 50%; opacity: 0; animation: afficherChargement .25s ease 2.82s forwards, tourne .8s linear 2.82s infinite; }
-  @keyframes dessinerBasHaut { to { clip-path: inset(0 0 0 0); } }
-  @keyframes ouvrirFeuilleGauche { to { opacity: 1; transform: scale(1) rotate(0); } }
-  @keyframes ouvrirFeuilleDroite { to { opacity: 1; transform: scale(1) rotate(0); } }
-  @keyframes scintiller { 0% { opacity: 0; transform: scale(.45); filter: drop-shadow(0 0 0 rgba(55,174,225,0)); } 55% { opacity: 1; transform: scale(1.28); filter: drop-shadow(0 0 12px rgba(55,174,225,.9)); } 100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0 rgba(55,174,225,0)); } }
-  @keyframes monterTexte { to { opacity: 1; transform: translateY(0); } }
-  @keyframes afficherChargement { to { opacity: 1; } }
+  html, body { margin: 0; height: 100%; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  /* L'application demarre sous la barre d'etat et au-dessus de la barre
+     de geste, sur les telephones a encoche comme sur les autres. */
+  body { padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0; box-sizing: border-box; }
+  #appli { display: block; width: 100%; height: 100%; border: 0; }
+  #chargement { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: #fff; z-index: 5; transition: opacity .3s; }
+  #chargement img { width: 88px; height: 88px; }
+  #chargement p { margin: 0; color: #64748b; font-size: 14px; }
+  .roue { width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #1565c0; border-radius: 50%; animation: tourne .8s linear infinite; }
   @keyframes tourne { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .logo-animation img, .roue, #chargement p { animation-duration: .01ms !important; animation-delay: 0ms !important; } }
   #hors-ligne { display: none; position: fixed; left: 12px; right: 12px; top: calc(env(safe-area-inset-top) + 12px); padding: 10px 14px; border-radius: 12px; background: #fef2f2; color: #b91c1c; font-size: 14px; text-align: center; z-index: 20; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
   #installer { display: none; position: fixed; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom) + 12px); padding: 14px; border-radius: 16px; background: #0f172a; color: #fff; z-index: 20; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
   #installer .ligne { display: flex; align-items: center; gap: 12px; }
@@ -72,15 +41,7 @@ body {
 <body>
 
 <div id="chargement">
-  <div class="logo-animation" role="img" aria-label="NETTPRO France — Propreté et multiservices">
-    <img class="calque-goutte" src="01-goutte-bleue.png" alt="">
-    <img class="calque-courbe" src="02-courbe-verte.png" alt="">
-    <img class="calque-feuille-gauche" src="03-feuille-gauche.png" alt="">
-    <img class="calque-feuille-droite" src="04-feuille-droite.png" alt="">
-    <img class="calque-etoiles" src="05-etoiles.png" alt="">
-    <img class="calque-texte" src="06-texte-nettpro-france.png" alt="">
-    <img class="calque-slogan" src="07-slogan-proprete-multiservices.png" alt="">
-  </div>
+  <img src="icon-192.png" alt="NETTPRO">
   <div class="roue"></div>
   <p>Chargement de NETTPRO…</p>
 </div>
@@ -91,8 +52,8 @@ body {
      sert au pointage, l'appareil photo au scan et aux photos de preuve. -->
 <iframe id="appli" title="NETTPRO"
   allow="geolocation; camera; microphone; clipboard-read; clipboard-write; fullscreen"
-  src="https://script.google.com/macros/s/AKfycbz2vZcGZ2ewoNC1iP6gknl2--qdAPSC5fWh_vTH5LS1TGuIxwMkAogPrRyamQuHtx55lA/exec">
-</iframe>
+  src="https://script.google.com/macros/s/AKfycby5AS9kEykyrGdTF7kEP3YnTEW3t_QcXFVhWO07-2hUiHoNYK-CQ_2AEXlJs3aSzDNehQ/exec"></iframe>
+
 <div id="installer" role="dialog" aria-label="Installer l'application">
   <div class="ligne">
     <img src="icon-192.png" alt="">
@@ -113,15 +74,10 @@ body {
   var appli = document.getElementById('appli');
   var chargement = document.getElementById('chargement');
   var horsLigne = document.getElementById('hors-ligne');
-  var debutAnimation = Date.now();
-  var dureeMinimum = 3200;
 
   appli.addEventListener('load', function() {
-    var attente = Math.max(0, dureeMinimum - (Date.now() - debutAnimation));
-    setTimeout(function() {
-      chargement.style.opacity = '0';
-      setTimeout(function() { chargement.style.display = 'none'; }, 350);
-    }, attente);
+    chargement.style.opacity = '0';
+    setTimeout(function() { chargement.style.display = 'none'; }, 300);
   });
 
   function majReseau() {
@@ -132,7 +88,28 @@ body {
   majReseau();
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(function() {});
+    navigator.serviceWorker.register('sw.js').then(function(inscription) {
+      // Verifie a chaque ouverture s'il existe une nouvelle version, et
+      // recharge la page des qu'elle est prete : sans cela, l'application
+      // restait figee sur l'ancienne coquille jusqu'a une reinstallation.
+      inscription.update();
+      inscription.addEventListener('updatefound', function() {
+        var nouveau = inscription.installing;
+        if (!nouveau) return;
+        nouveau.addEventListener('statechange', function() {
+          if (nouveau.state === 'installed' && navigator.serviceWorker.controller) {
+            nouveau.postMessage('maj');
+          }
+        });
+      });
+      setInterval(function() { inscription.update(); }, 30 * 60 * 1000);
+    }).catch(function() {});
+    var rechargee = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      if (rechargee) return;
+      rechargee = true;
+      location.reload();
+    });
   }
 
   /* ---- Aide a l'installation ----

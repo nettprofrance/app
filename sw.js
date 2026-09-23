@@ -6,7 +6,7 @@
  * toujours etre fraiches.
  * Changer VERSION a chaque modification de la coquille force la mise a jour.
  */
-const VERSION = 'nettpro-coquille-v5';
+const VERSION = 'nettpro-coquille-v2';
 const FICHIERS = [
   './',
   './index.html',
@@ -14,19 +14,18 @@ const FICHIERS = [
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-512.png',
-  './apple-touch-icon.png',
-  './01-goutte-bleue.png',
-  './02-courbe-verte.png',
-  './03-feuille-gauche.png',
-  './04-feuille-droite.png',
-  './05-etoiles.png',
-  './06-texte-nettpro-france.png',
-  './07-slogan-proprete-multiservices.png'
+  './apple-touch-icon.png'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(FICHIERS)));
+  // Prend la main immediatement : sans cela, une nouvelle version attendait
+  // que tous les onglets soient fermes, et les agents gardaient l'ancienne.
   self.skipWaiting();
+});
+
+self.addEventListener('message', event => {
+  if (event.data === 'maj') self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
