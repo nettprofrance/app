@@ -83,7 +83,7 @@ body {
   </div>
   <div class="roue"></div>
   <p>Chargement de NETTPRO…</p>
-  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 12</p>
+  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 13</p>
 </div>
 
 <div id="autorisations" style="display:none;position:fixed;inset:0;z-index:30;background:#fff;padding:24px 20px;overflow-y:auto;">
@@ -159,7 +159,7 @@ body {
 (function() {
   // Numero de version de la coquille : visible au demarrage, il evite d'avoir
   // a deviner si une mise a jour est bien arrivee sur le telephone.
-  var VERSION_COQUILLE = 12;
+  var VERSION_COQUILLE = 13;
 
   var appli = document.getElementById('appli');
   // L'application installee gardait en memoire l'ancienne page Apps Script.
@@ -440,6 +440,13 @@ body {
     tracer('reçu : ' + m.nettpro);
     if (m.nettpro === 'ouvrir-scanner') ouvrirScanner();
     if (m.nettpro === 'demander-position') fournirPosition();
+    if (m.nettpro === 'demander-jeton') {
+      obtenirJetonNotification().then(function(j) {
+        jetonAppareil = j;
+        tracer('jeton : ' + (j ? 'obtenu' : 'indisponible'));
+        repondre('jeton', { jeton: j || '', appareil: navigator.userAgent.slice(0, 60) });
+      });
+    }
   });
 
   function fournirPosition() {
@@ -551,6 +558,55 @@ body {
       fermerScanner();
       repondre('scanner-resultat', { code: code });
     }, 550);
+  }
+
+  /* ---- Identifiant de notification ----
+   * Firebase attribue un identifiant par appareil et par navigateur. Il
+   * expire periodiquement : on le redemande a chaque ouverture et on le
+   * transmet a l'application, qui l'enregistre.
+   */
+  var jetonAppareil = null;
+
+  function chargerFirebase() {
+    if (window.firebase && window.firebase.messaging) return Promise.resolve(true);
+    return new Promise(function(resoudre) {
+      var a = document.createElement('script');
+      a.src = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js';
+      a.onload = function() {
+        var b = document.createElement('script');
+        b.src = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js';
+        b.onload = function() { resoudre(true); };
+        b.onerror = function() { resoudre(false); };
+        document.head.appendChild(b);
+      };
+      a.onerror = function() { resoudre(false); };
+      document.head.appendChild(a);
+    });
+  }
+
+  function obtenirJetonNotification() {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return Promise.resolve(null);
+    return chargerFirebase().then(function(pret) {
+      if (!pret) return null;
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp({
+            apiKey: 'AIzaSyBqkTX5OVd9VzN_Ffa_U8ym8uPBo_DL3Ck',
+            authDomain: 'nettpro-e35a9.firebaseapp.com',
+            projectId: 'nettpro-e35a9',
+            storageBucket: 'nettpro-e35a9.firebasestorage.app',
+            messagingSenderId: '530092719574',
+            appId: '1:530092719574:web:88a195305452dc5750b877'
+          });
+        }
+        return navigator.serviceWorker.register('firebase-messaging-sw.js').then(function(inscription) {
+          return firebase.messaging().getToken({
+            vapidKey: 'BJmRcSxnbP0eqL9txtl2BcGpS_PvLTFkVBmD8Y6-IZ18kKQrinFCdXqx43AUMlOvcuGwwwqLOv4tTsJp7M_o81s',
+            serviceWorkerRegistration: inscription
+          });
+        });
+      } catch (e) { tracer('jeton : ' + e); return null; }
+    }).catch(function(e) { tracer('jeton refuse : ' + e); return null; });
   }
 
   function majReseau() {

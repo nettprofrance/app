@@ -6,7 +6,7 @@
  * toujours etre fraiches.
  * Changer VERSION a chaque modification de la coquille force la mise a jour.
  */
-const VERSION = 'nettpro-coquille-v12';
+const VERSION = 'nettpro-coquille-v13';
 const FICHIERS = [
   './',
   './index.html',
@@ -21,7 +21,8 @@ const FICHIERS = [
   './04-feuille-droite.png',
   './05-etoiles.png',
   './06-texte-nettpro-france.png',
-  './07-slogan-proprete-multiservices.png'
+  './07-slogan-proprete-multiservices.png',
+  './firebase-messaging-sw.js'
 ];
 
 self.addEventListener('install', event => {
