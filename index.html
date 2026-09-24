@@ -83,7 +83,7 @@ body {
   </div>
   <div class="roue"></div>
   <p>Chargement de NETTPRO…</p>
-  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 9</p>
+  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 10</p>
 </div>
 
 <div id="autorisations" style="display:none;position:fixed;inset:0;z-index:30;background:#fff;padding:24px 20px;overflow-y:auto;">
@@ -112,6 +112,18 @@ body {
     <button id="btn-autoriser" type="button" style="width:100%;padding:14px;border:0;border-radius:12px;background:#1565c0;color:#fff;font-size:15px;font-weight:600;">Autoriser</button>
     <button id="btn-plus-tard-autor" type="button" style="width:100%;margin-top:8px;padding:12px;border:0;border-radius:12px;background:transparent;color:#64748b;font-size:14px;">Plus tard</button>
     <div id="autorisations-resultat" style="margin-top:16px;font-size:13px;line-height:1.5;"></div>
+  </div>
+</div>
+
+<div id="scanner" style="display:none;position:fixed;inset:0;z-index:40;background:#000;">
+  <video id="scanner-video" playsinline muted style="width:100%;height:100%;object-fit:cover;"></video>
+  <div id="scanner-viseur" style="position:absolute;left:8%;right:8%;top:32%;height:36%;border:2px solid rgba(255,255,255,.85);border-radius:12px;pointer-events:none;"></div>
+  <div id="scanner-succes" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;background:rgba(22,163,74,.92);color:#fff;text-align:center;">
+    <div><div style="font-size:52px;">&#10003;</div><div id="scanner-code" style="font-size:15px;margin-top:6px;"></div></div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.75));">
+    <div id="scanner-etat" style="color:#fff;font-size:14px;text-align:center;margin-bottom:12px;">Présentez le code-barres devant l'appareil</div>
+    <button id="scanner-fermer" type="button" style="width:100%;padding:13px;border:0;border-radius:12px;background:rgba(255,255,255,.18);color:#fff;font-size:15px;">Annuler</button>
   </div>
 </div>
 
@@ -145,7 +157,7 @@ body {
 (function() {
   // Numero de version de la coquille : visible au demarrage, il evite d'avoir
   // a deviner si une mise a jour est bien arrivee sur le telephone.
-  var VERSION_COQUILLE = 9;
+  var VERSION_COQUILLE = 10;
 
   var appli = document.getElementById('appli');
   // L'application installee gardait en memoire l'ancienne page Apps Script.
@@ -376,6 +388,136 @@ body {
 
     suivante();
   });
+
+  /* ---- Pont avec l'application ----
+   * La camera et la position sont accordees a cette page, jamais au cadre
+   * imbrique qui affiche l'application : Apps Script sert sa page depuis un
+   * domaine anonyme, sur lequel aucune autorisation ne peut etre accordee.
+   * La coquille rend donc ces services et transmet le resultat.
+   */
+  function repondre(type, donnees) {
+    var cadre = document.getElementById('appli');
+    if (cadre && cadre.contentWindow) {
+      cadre.contentWindow.postMessage(Object.assign({ nettpro: type }, donnees || {}), '*');
+    }
+  }
+
+  window.addEventListener('message', function(e) {
+    var m = e.data;
+    if (!m || !m.nettpro) return;
+    if (m.nettpro === 'ouvrir-scanner') ouvrirScanner();
+    if (m.nettpro === 'demander-position') fournirPosition();
+  });
+
+  function fournirPosition() {
+    if (!navigator.geolocation) { repondre('position', { erreur: 'indisponible' }); return; }
+    navigator.geolocation.getCurrentPosition(
+      function(p) { repondre('position', { lat: p.coords.latitude, lng: p.coords.longitude, precision: p.coords.accuracy }); },
+      function(err) { repondre('position', { erreur: (err && err.code === 1) ? 'refuse' : 'echec' }); },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    );
+  }
+
+  /* ---- Scanner ---- */
+  var fluxScanner = null;
+  var lectureActive = false;
+  var lecteurZXing = null;
+  var dernierCode = '';
+  var momentDernierCode = 0;
+
+  function ouvrirScanner() {
+    var ecran = document.getElementById('scanner');
+    var video = document.getElementById('scanner-video');
+    var etat = document.getElementById('scanner-etat');
+    ecran.style.display = 'block';
+    etat.textContent = 'Présentez le code-barres devant l\'appareil';
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } })
+      .then(function(flux) {
+        fluxScanner = flux;
+        video.srcObject = flux;
+        return video.play();
+      })
+      .then(function() { lectureActive = true; boucleLecture(); })
+      .catch(function(e) {
+        etat.textContent = 'Caméra indisponible (' + ((e && e.name) || 'erreur') + ').';
+        repondre('scanner-echec', { raison: (e && e.name) || 'erreur' });
+      });
+  }
+
+  function fermerScanner() {
+    lectureActive = false;
+    if (fluxScanner) { fluxScanner.getTracks().forEach(function(p) { p.stop(); }); fluxScanner = null; }
+    if (lecteurZXing && lecteurZXing.reset) { try { lecteurZXing.reset(); } catch (e) {} }
+    lecteurZXing = null;
+    document.getElementById('scanner').style.display = 'none';
+    document.getElementById('scanner-succes').style.display = 'none';
+  }
+
+  document.getElementById('scanner-fermer').addEventListener('click', function() {
+    fermerScanner();
+    repondre('scanner-annule');
+  });
+
+  function chargerZXing() {
+    if (window.ZXing) return Promise.resolve(true);
+    return new Promise(function(resoudre) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+      s.onload = function() { resoudre(!!window.ZXing); };
+      s.onerror = function() { resoudre(false); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function boucleLecture() {
+    var video = document.getElementById('scanner-video');
+    // Android sait lire les codes nativement : plus rapide et plus sur.
+    if ('BarcodeDetector' in window) {
+      var detecteur = null;
+      try { detecteur = new window.BarcodeDetector(); } catch (e) { detecteur = null; }
+      if (detecteur) {
+        var tourner = function() {
+          if (!lectureActive) return;
+          detecteur.detect(video).then(function(codes) {
+            if (codes && codes.length && codes[0].rawValue) { codeLu(codes[0].rawValue); return; }
+            setTimeout(tourner, 250);
+          }).catch(function() { setTimeout(tourner, 400); });
+        };
+        tourner();
+        return;
+      }
+    }
+    chargerZXing().then(function(pret) {
+      if (!pret || !lectureActive) {
+        document.getElementById('scanner-etat').textContent = 'Lecture impossible sur cet appareil.';
+        return;
+      }
+      try {
+        lecteurZXing = new window.ZXing.BrowserMultiFormatReader();
+        lecteurZXing.decodeFromVideoElement(video, function(resultat) {
+          if (resultat && lectureActive) codeLu(resultat.getText());
+        });
+      } catch (e) {
+        document.getElementById('scanner-etat').textContent = 'Lecture impossible sur cet appareil.';
+      }
+    });
+  }
+
+  function codeLu(code) {
+    var maintenant = Date.now();
+    // Un meme code est lu plusieurs fois par seconde : on ignore les
+    // repetitions rapprochees pour ne pas enchainer deux fois la meme fiche.
+    if (code === dernierCode && maintenant - momentDernierCode < 2500) return;
+    dernierCode = code;
+    momentDernierCode = maintenant;
+    document.getElementById('scanner-code').textContent = code;
+    document.getElementById('scanner-succes').style.display = 'flex';
+    if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} }
+    setTimeout(function() {
+      fermerScanner();
+      repondre('scanner-resultat', { code: code });
+    }, 550);
+  }
 
   function majReseau() {
     horsLigne.style.display = navigator.onLine ? 'none' : 'block';
