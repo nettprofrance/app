@@ -83,7 +83,7 @@ body {
   </div>
   <div class="roue"></div>
   <p>Chargement de NETTPRO…</p>
-  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 11</p>
+  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 12</p>
 </div>
 
 <div id="autorisations" style="display:none;position:fixed;inset:0;z-index:30;background:#fff;padding:24px 20px;overflow-y:auto;">
@@ -127,6 +127,8 @@ body {
   </div>
 </div>
 
+<div id="trace" style="display:none;position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 8px);z-index:90;background:rgba(15,23,42,.92);color:#a7f3d0;font:12px/1.5 monospace;padding:8px 10px;border-radius:10px;max-height:40vh;overflow-y:auto;"></div>
+
 <div id="hors-ligne">Pas de connexion internet. L'application se rechargera dès le retour du réseau.</div>
 
 <!-- L'application Apps Script, affichee en plein ecran.
@@ -157,7 +159,7 @@ body {
 (function() {
   // Numero de version de la coquille : visible au demarrage, il evite d'avoir
   // a deviner si une mise a jour est bien arrivee sur le telephone.
-  var VERSION_COQUILLE = 11;
+  var VERSION_COQUILLE = 12;
 
   var appli = document.getElementById('appli');
   // L'application installee gardait en memoire l'ancienne page Apps Script.
@@ -397,10 +399,37 @@ body {
    */
   // On repond a l'expediteur du message, jamais au cadre : l'application est
   // imbriquee a deux niveaux et ne recevrait rien autrement.
+  /* Trace visible : sur telephone, la console n'est pas accessible. Elle
+   * s'active en touchant cinq fois le logo au demarrage, et s'efface seule. */
+  var traceActive = false;
+  var traceLignes = [];
+
+  function tracer(texte) {
+    if (!traceActive) return;
+    traceLignes.push(new Date().toLocaleTimeString('fr-FR') + ' · ' + texte);
+    if (traceLignes.length > 30) traceLignes.shift();
+    var zone = document.getElementById('trace');
+    zone.style.display = 'block';
+    zone.innerHTML = traceLignes.map(function(l) { return '<div>' + l + '</div>'; }).join('');
+    zone.scrollTop = zone.scrollHeight;
+  }
+
+  (function() {
+    var touches = 0;
+    document.querySelector('.logo-animation').addEventListener('click', function() {
+      touches++;
+      if (touches >= 5) { traceActive = true; tracer('Trace activée — coquille v' + VERSION_COQUILLE); }
+    });
+    document.getElementById('trace').addEventListener('click', function() {
+      this.style.display = 'none'; traceActive = false; traceLignes = [];
+    });
+  })();
+
   var demandeur = null;
 
   function repondre(type, donnees) {
-    if (!demandeur) return;
+    tracer('réponse : ' + type + (donnees && donnees.code ? ' (' + donnees.code + ')' : ''));
+    if (!demandeur) { tracer('AUCUN destinataire connu'); return; }
     try { demandeur.postMessage(Object.assign({ nettpro: type }, donnees || {}), '*'); } catch (e) {}
   }
 
@@ -408,6 +437,7 @@ body {
     var m = e.data;
     if (!m || !m.nettpro) return;
     demandeur = e.source;
+    tracer('reçu : ' + m.nettpro);
     if (m.nettpro === 'ouvrir-scanner') ouvrirScanner();
     if (m.nettpro === 'demander-position') fournirPosition();
   });
@@ -442,6 +472,7 @@ body {
       })
       .then(function() { lectureActive = true; boucleLecture(); })
       .catch(function(e) {
+        tracer('caméra refusée : ' + ((e && e.name) || 'erreur'));
         etat.textContent = 'Caméra indisponible (' + ((e && e.name) || 'erreur') + ').';
         repondre('scanner-echec', { raison: (e && e.name) || 'erreur' });
       });
