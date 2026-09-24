@@ -83,7 +83,7 @@ body {
   </div>
   <div class="roue"></div>
   <p>Chargement de NETTPRO…</p>
-  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 7</p>
+  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 9</p>
 </div>
 
 <div id="autorisations" style="display:none;position:fixed;inset:0;z-index:30;background:#fff;padding:24px 20px;overflow-y:auto;">
@@ -117,10 +117,13 @@ body {
 
 <div id="hors-ligne">Pas de connexion internet. L'application se rechargera dès le retour du réseau.</div>
 
-<!-- L'application Apps Script, affichee en plein ecran. La geolocalisation
-     sert au pointage, l'appareil photo au scan et aux photos de preuve. -->
+<!-- L'application Apps Script, affichee en plein ecran.
+     L'etoile apres chaque autorisation est indispensable : sans elle, la
+     permission n'est deleguee qu'au domaine du cadre, alors que la page
+     finale est servie depuis un troisieme domaine (googleusercontent). La
+     camera etait donc refusee malgre l'autorisation accordee. -->
 <iframe id="appli" title="NETTPRO"
-  allow="geolocation; camera; microphone; clipboard-read; clipboard-write; fullscreen"
+  allow="geolocation *; camera *; microphone *; clipboard-read *; clipboard-write *; fullscreen *"
   data-base="https://script.google.com/macros/s/AKfycbx4sEt26j-HXgp72HtNtfG0n0cqKtEgDx2zSlrWmAM4FrKIJDd9Z6oUA298fBfSnMmB/exec">
 </iframe>
 <div id="installer" role="dialog" aria-label="Installer l'application">
@@ -142,7 +145,7 @@ body {
 (function() {
   // Numero de version de la coquille : visible au demarrage, il evite d'avoir
   // a deviner si une mise a jour est bien arrivee sur le telephone.
-  var VERSION_COQUILLE = 7;
+  var VERSION_COQUILLE = 9;
 
   var appli = document.getElementById('appli');
   // L'application installee gardait en memoire l'ancienne page Apps Script.
@@ -234,6 +237,8 @@ body {
     return avecDelai(new Promise(function(resoudre) {
       navigator.geolocation.getCurrentPosition(
         function() { resoudre('ok'); },
+        // Code 1 : l'utilisateur a refuse. Les autres codes signifient que la
+        // position n'a pas pu etre obtenue, ce qui n'est pas un refus.
         function(e) { resoudre(e && e.code === 1 ? 'refuse' : 'echec'); },
         { timeout: 12000, maximumAge: 60000 }
       );
@@ -244,53 +249,69 @@ body {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.resolve('indisponible');
     return avecDelai(navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
       .then(function(flux) {
-        // On relache aussitot : il s'agissait d'obtenir l'accord, pas de filmer.
         flux.getTracks().forEach(function(p) { p.stop(); });
         return 'ok';
       })
-      .catch(function() { return 'refuse'; }), 15);
+      .catch(function(e) {
+        return (e && e.name === 'NotAllowedError') ? 'refuse' : 'echec';
+      }), 15);
   }
 
+  /* Les notifications ne peuvent etre demandees que dans la foulee immediate
+   * d'un clic. Posee en troisieme position, quelques secondes apres le geste,
+   * la demande etait rejetee sans qu'aucune fenetre n'apparaisse — d'ou le
+   * refus constate alors que le telephone les autorisait. */
   function demanderNotifications() {
     if (!('Notification' in window)) return Promise.resolve('indisponible');
     if (Notification.permission === 'granted') return Promise.resolve('ok');
-    return avecDelai(Notification.requestPermission()
-      .then(function(e) { return e === 'granted' ? 'ok' : 'refuse'; })
-      .catch(function() { return 'refuse'; }), 15);
+    if (Notification.permission === 'denied') return Promise.resolve('refuse');
+    try {
+      var retour = Notification.requestPermission();
+      if (!retour || !retour.then) return Promise.resolve('non demande');
+      return avecDelai(retour.then(function(e) {
+        return e === 'granted' ? 'ok' : (e === 'denied' ? 'refuse' : 'non demande');
+      }).catch(function() { return 'non demande'; }), 15);
+    } catch (e) {
+      return Promise.resolve('non demande');
+    }
   }
+
+  var LIBELLES_AUTOR = {
+    ok: 'autorisée',
+    refuse: 'refusée',
+    echec: 'impossible à obtenir',
+    'non demande': 'non demandée par le navigateur',
+    'sans reponse': 'sans réponse',
+    indisponible: 'non disponible sur cet appareil'
+  };
 
   document.getElementById('btn-autoriser').addEventListener('click', function() {
     var bouton = this;
     var resultat = document.getElementById('autorisations-resultat');
     bouton.disabled = true;
     var etat = etatAutorisations();
+    var lignes = [];
 
+    // Les notifications d'abord : ce sont les seules qui exigent le lien
+    // direct avec le clic. La position et la camera peuvent attendre.
     var suite = [
-      { cle: 'position', nom: '📍 Position', fn: demanderPosition },
+      { cle: 'notifications', nom: '🔔 Notifications', fn: demanderNotifications },
       { cle: 'camera', nom: '📷 Caméra', fn: demanderCamera },
-      { cle: 'notifications', nom: '🔔 Notifications', fn: demanderNotifications }
+      { cle: 'position', nom: '📍 Position', fn: demanderPosition }
     ];
 
-    var lignes = [];
     var index = 0;
-
-    function afficher() {
-      resultat.innerHTML = lignes.join('');
-    }
 
     function suivante() {
       if (index >= suite.length) { terminer(); return; }
       var etape = suite[index];
-      bouton.textContent = 'Demande : ' + etape.nom.replace(/^\S+\s/, '') + '…';
+      bouton.textContent = 'Demande en cours : ' + etape.nom.replace(/^\S+\s/, '');
       etape.fn().then(function(reponse) {
         etat[etape.cle] = reponse;
-        var texte = reponse === 'ok' ? 'autorisée'
-          : reponse === 'refuse' ? 'refusée'
-          : reponse === 'indisponible' ? 'non disponible sur cet appareil'
-          : 'sans réponse';
         var couleur = reponse === 'ok' ? '#15803d' : '#b91c1c';
-        lignes.push('<div style="color:' + couleur + '">' + etape.nom + ' : ' + texte + '</div>');
-        afficher();
+        lignes.push('<div style="color:' + couleur + '">' + etape.nom + ' : '
+          + (LIBELLES_AUTOR[reponse] || reponse) + '</div>');
+        resultat.innerHTML = lignes.join('');
         index++;
         suivante();
       });
@@ -305,17 +326,49 @@ body {
         bouton.onclick = function() { ecranAutorisations.style.display = 'none'; };
         return;
       }
-      // Ce qui manque casse des fonctions entieres : on le dit clairement et
-      // on propose de reessayer, plutot que de laisser croire que tout va bien.
-      resultat.innerHTML += '<div style="margin-top:14px;padding:12px;border-radius:10px;background:#fef2f2;color:#b91c1c;line-height:1.5;">'
+
+      // Une demande que le navigateur n'a pas posee se rattrape par un clic
+      // direct : le bouton retablit le lien avec le geste de l'utilisateur.
+      var rattrapables = manquantes.filter(function(e) {
+        return etat[e.cle] === 'non demande' || etat[e.cle] === 'sans reponse' || etat[e.cle] === 'echec';
+      });
+      var vraisRefus = manquantes.filter(function(e) { return etat[e.cle] === 'refuse'; });
+
+      var html = '<div style="margin-top:14px;padding:12px;border-radius:10px;background:#fef2f2;color:#b91c1c;line-height:1.5;">'
         + '<b>Sans ces autorisations, certaines fonctions ne marcheront pas :</b><br>'
         + (etat.position !== 'ok' ? '• Le pointage d\'arrivée et de départ<br>' : '')
         + (etat.camera !== 'ok' ? '• Le scan des codes-barres et les photos<br>' : '')
         + (etat.notifications !== 'ok' ? '• Les rappels avant vos interventions<br>' : '')
-        + '<br>Si une autorisation a été refusée : réglages du téléphone, applications, NETTPRO, autorisations.'
+        + (vraisRefus.length
+            ? '<br>Vous avez refusé : ' + vraisRefus.map(function(e) { return e.nom.replace(/^\S+\s/, ''); }).join(', ')
+              + '. Réactivez-les dans les réglages du téléphone : Applications, NETTPRO, Autorisations.'
+            : '')
         + '</div>';
-      bouton.textContent = 'Réessayer';
-      bouton.onclick = function() { location.reload(); };
+
+      rattrapables.forEach(function(e) {
+        html += '<button type="button" data-relancer="' + e.cle + '" '
+          + 'style="width:100%;margin-top:8px;padding:12px;border:0;border-radius:12px;background:#1565c0;color:#fff;font-size:14px;font-weight:600;">'
+          + 'Autoriser ' + e.nom.replace(/^\S+\s/, '') + '</button>';
+      });
+
+      resultat.innerHTML = lignes.join('') + html;
+      bouton.style.display = 'none';
+
+      resultat.querySelectorAll('[data-relancer]').forEach(function(b) {
+        b.addEventListener('click', function() {
+          var cle = b.dataset.relancer;
+          var etape = suite.filter(function(x) { return x.cle === cle; })[0];
+          b.disabled = true;
+          b.textContent = 'Demande en cours…';
+          etape.fn().then(function(reponse) {
+            etat[cle] = reponse;
+            enregistrerEtat(etat);
+            if (reponse === 'ok') { b.style.background = '#16a34a'; b.textContent = etape.nom + ' : autorisée'; }
+            else { b.disabled = false; b.textContent = 'Réessayer ' + etape.nom.replace(/^\S+\s/, ''); }
+          });
+        });
+      });
+
       var passer = document.getElementById('btn-plus-tard-autor');
       passer.textContent = 'Continuer quand même';
       passer.style.color = '#b91c1c';
