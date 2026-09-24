@@ -83,7 +83,7 @@ body {
   </div>
   <div class="roue"></div>
   <p>Chargement de NETTPRO…</p>
-  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 6</p>
+  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 7</p>
 </div>
 
 <div id="autorisations" style="display:none;position:fixed;inset:0;z-index:30;background:#fff;padding:24px 20px;overflow-y:auto;">
@@ -142,7 +142,7 @@ body {
 (function() {
   // Numero de version de la coquille : visible au demarrage, il evite d'avoir
   // a deviner si une mise a jour est bien arrivee sur le telephone.
-  var VERSION_COQUILLE = 6;
+  var VERSION_COQUILLE = 7;
 
   var appli = document.getElementById('appli');
   // L'application installee gardait en memoire l'ancienne page Apps Script.
@@ -195,13 +195,23 @@ body {
    */
   var ecranAutorisations = document.getElementById('autorisations');
 
-  function autorisationsDejaVues() {
-    try { return localStorage.getItem('nettpro_autorisations') === 'ok'; }
-    catch (e) { return false; }
+  function etatAutorisations() {
+    try { return JSON.parse(localStorage.getItem('nettpro_autorisations') || '{}'); }
+    catch (e) { return {}; }
+  }
+
+  function enregistrerEtat(etat) {
+    try { localStorage.setItem('nettpro_autorisations', JSON.stringify(etat)); } catch (e) {}
+  }
+
+  function toutAccorde(etat) {
+    return etat.position === 'ok' && etat.camera === 'ok' && etat.notifications === 'ok';
   }
 
   function proposerAutorisations() {
-    if (autorisationsDejaVues()) return;
+    // Tant qu'une autorisation manque, l'ecran revient a chaque ouverture :
+    // sans position ni camera, ni le pointage ni le scan ne fonctionnent.
+    if (toutAccorde(etatAutorisations())) return;
     ecranAutorisations.style.display = 'block';
   }
 
@@ -209,58 +219,109 @@ body {
     ecranAutorisations.style.display = 'none';
   });
 
+  /* Chaque demande a son propre delai : une autorisation qui ne repond jamais
+   * ne doit pas empecher les suivantes. Certains telephones n'affichent
+   * qu'une fenetre a la fois, d'ou l'enchainement plutot que le parallele. */
+  function avecDelai(promesse, secondes) {
+    return Promise.race([
+      promesse,
+      new Promise(function(resoudre) { setTimeout(function() { resoudre('sans reponse'); }, secondes * 1000); })
+    ]);
+  }
+
+  function demanderPosition() {
+    if (!navigator.geolocation) return Promise.resolve('indisponible');
+    return avecDelai(new Promise(function(resoudre) {
+      navigator.geolocation.getCurrentPosition(
+        function() { resoudre('ok'); },
+        function(e) { resoudre(e && e.code === 1 ? 'refuse' : 'echec'); },
+        { timeout: 12000, maximumAge: 60000 }
+      );
+    }), 15);
+  }
+
+  function demanderCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.resolve('indisponible');
+    return avecDelai(navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
+      .then(function(flux) {
+        // On relache aussitot : il s'agissait d'obtenir l'accord, pas de filmer.
+        flux.getTracks().forEach(function(p) { p.stop(); });
+        return 'ok';
+      })
+      .catch(function() { return 'refuse'; }), 15);
+  }
+
+  function demanderNotifications() {
+    if (!('Notification' in window)) return Promise.resolve('indisponible');
+    if (Notification.permission === 'granted') return Promise.resolve('ok');
+    return avecDelai(Notification.requestPermission()
+      .then(function(e) { return e === 'granted' ? 'ok' : 'refuse'; })
+      .catch(function() { return 'refuse'; }), 15);
+  }
+
   document.getElementById('btn-autoriser').addEventListener('click', function() {
     var bouton = this;
     var resultat = document.getElementById('autorisations-resultat');
     bouton.disabled = true;
-    bouton.textContent = 'Demande en cours…';
+    var etat = etatAutorisations();
+
+    var suite = [
+      { cle: 'position', nom: '📍 Position', fn: demanderPosition },
+      { cle: 'camera', nom: '📷 Caméra', fn: demanderCamera },
+      { cle: 'notifications', nom: '🔔 Notifications', fn: demanderNotifications }
+    ];
+
     var lignes = [];
+    var index = 0;
 
-    var etapes = [];
+    function afficher() {
+      resultat.innerHTML = lignes.join('');
+    }
 
-    etapes.push(new Promise(function(resoudre) {
-      if (!navigator.geolocation) { lignes.push('📍 Position : non disponible sur cet appareil'); resoudre(); return; }
-      navigator.geolocation.getCurrentPosition(
-        function() { lignes.push('📍 Position : autorisée'); resoudre(); },
-        function() { lignes.push('📍 Position : refusée'); resoudre(); },
-        { timeout: 10000 }
-      );
-    }));
+    function suivante() {
+      if (index >= suite.length) { terminer(); return; }
+      var etape = suite[index];
+      bouton.textContent = 'Demande : ' + etape.nom.replace(/^\S+\s/, '') + '…';
+      etape.fn().then(function(reponse) {
+        etat[etape.cle] = reponse;
+        var texte = reponse === 'ok' ? 'autorisée'
+          : reponse === 'refuse' ? 'refusée'
+          : reponse === 'indisponible' ? 'non disponible sur cet appareil'
+          : 'sans réponse';
+        var couleur = reponse === 'ok' ? '#15803d' : '#b91c1c';
+        lignes.push('<div style="color:' + couleur + '">' + etape.nom + ' : ' + texte + '</div>');
+        afficher();
+        index++;
+        suivante();
+      });
+    }
 
-    etapes.push(new Promise(function(resoudre) {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        lignes.push('📷 Caméra : non disponible'); resoudre(); return;
-      }
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
-        .then(function(flux) {
-          // On relache aussitot : il s'agissait d'obtenir l'accord, pas de filmer.
-          flux.getTracks().forEach(function(p) { p.stop(); });
-          lignes.push('📷 Caméra : autorisée');
-          resoudre();
-        })
-        .catch(function() { lignes.push('📷 Caméra : refusée'); resoudre(); });
-    }));
-
-    etapes.push(new Promise(function(resoudre) {
-      if (!('Notification' in window)) { lignes.push('🔔 Notifications : non disponibles'); resoudre(); return; }
-      Notification.requestPermission().then(function(etat) {
-        lignes.push('🔔 Notifications : ' + (etat === 'granted' ? 'autorisées' : 'refusées'));
-        resoudre();
-      }).catch(function() { lignes.push('🔔 Notifications : refusées'); resoudre(); });
-    }));
-
-    Promise.all(etapes).then(function() {
-      try { localStorage.setItem('nettpro_autorisations', 'ok'); } catch (e) {}
-      var refus = lignes.filter(function(l) { return l.indexOf('refus') !== -1; });
-      resultat.innerHTML = lignes.map(function(l) { return '<div>' + l + '</div>'; }).join('')
-        + (refus.length
-            ? '<div style="margin-top:12px;padding:10px;border-radius:10px;background:#fef2f2;color:#b91c1c;">'
-              + 'Pour réactiver une autorisation refusée : réglages du téléphone, applications, NETTPRO, autorisations.</div>'
-            : '');
-      bouton.textContent = 'Continuer';
+    function terminer() {
+      enregistrerEtat(etat);
       bouton.disabled = false;
-      bouton.onclick = function() { ecranAutorisations.style.display = 'none'; };
-    });
+      var manquantes = suite.filter(function(e) { return etat[e.cle] !== 'ok'; });
+      if (!manquantes.length) {
+        bouton.textContent = 'Continuer';
+        bouton.onclick = function() { ecranAutorisations.style.display = 'none'; };
+        return;
+      }
+      // Ce qui manque casse des fonctions entieres : on le dit clairement et
+      // on propose de reessayer, plutot que de laisser croire que tout va bien.
+      resultat.innerHTML += '<div style="margin-top:14px;padding:12px;border-radius:10px;background:#fef2f2;color:#b91c1c;line-height:1.5;">'
+        + '<b>Sans ces autorisations, certaines fonctions ne marcheront pas :</b><br>'
+        + (etat.position !== 'ok' ? '• Le pointage d\'arrivée et de départ<br>' : '')
+        + (etat.camera !== 'ok' ? '• Le scan des codes-barres et les photos<br>' : '')
+        + (etat.notifications !== 'ok' ? '• Les rappels avant vos interventions<br>' : '')
+        + '<br>Si une autorisation a été refusée : réglages du téléphone, applications, NETTPRO, autorisations.'
+        + '</div>';
+      bouton.textContent = 'Réessayer';
+      bouton.onclick = function() { location.reload(); };
+      var passer = document.getElementById('btn-plus-tard-autor');
+      passer.textContent = 'Continuer quand même';
+      passer.style.color = '#b91c1c';
+    }
+
+    suivante();
   });
 
   function majReseau() {
