@@ -83,7 +83,7 @@ body {
   </div>
   <div class="roue"></div>
   <p>Chargement de NETTPRO…</p>
-  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 10</p>
+  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 11</p>
 </div>
 
 <div id="autorisations" style="display:none;position:fixed;inset:0;z-index:30;background:#fff;padding:24px 20px;overflow-y:auto;">
@@ -157,7 +157,7 @@ body {
 (function() {
   // Numero de version de la coquille : visible au demarrage, il evite d'avoir
   // a deviner si une mise a jour est bien arrivee sur le telephone.
-  var VERSION_COQUILLE = 10;
+  var VERSION_COQUILLE = 11;
 
   var appli = document.getElementById('appli');
   // L'application installee gardait en memoire l'ancienne page Apps Script.
@@ -395,16 +395,19 @@ body {
    * domaine anonyme, sur lequel aucune autorisation ne peut etre accordee.
    * La coquille rend donc ces services et transmet le resultat.
    */
+  // On repond a l'expediteur du message, jamais au cadre : l'application est
+  // imbriquee a deux niveaux et ne recevrait rien autrement.
+  var demandeur = null;
+
   function repondre(type, donnees) {
-    var cadre = document.getElementById('appli');
-    if (cadre && cadre.contentWindow) {
-      cadre.contentWindow.postMessage(Object.assign({ nettpro: type }, donnees || {}), '*');
-    }
+    if (!demandeur) return;
+    try { demandeur.postMessage(Object.assign({ nettpro: type }, donnees || {}), '*'); } catch (e) {}
   }
 
   window.addEventListener('message', function(e) {
     var m = e.data;
     if (!m || !m.nettpro) return;
+    demandeur = e.source;
     if (m.nettpro === 'ouvrir-scanner') ouvrirScanner();
     if (m.nettpro === 'demander-position') fournirPosition();
   });
