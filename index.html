@@ -83,7 +83,36 @@ body {
   </div>
   <div class="roue"></div>
   <p>Chargement de NETTPRO…</p>
-  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 5</p>
+  <p id="version-coquille" style="margin-top:2px;font-size:11px;color:#94a3b8;">version 6</p>
+</div>
+
+<div id="autorisations" style="display:none;position:fixed;inset:0;z-index:30;background:#fff;padding:24px 20px;overflow-y:auto;">
+  <div style="max-width:420px;margin:0 auto;padding-top:env(safe-area-inset-top);">
+    <img src="icon-192.png" alt="" style="width:64px;height:64px;display:block;margin:0 auto 16px;">
+    <h1 style="font-size:19px;margin:0 0 6px;text-align:center;color:#0f172a;">Avant de commencer</h1>
+    <p style="font-size:14px;color:#64748b;margin:0 0 20px;text-align:center;line-height:1.5;">
+      NETTPRO a besoin de trois autorisations. Elles ne vous seront demandées qu'une fois.</p>
+
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:12px;background:#f8fafc;margin-bottom:10px;">
+      <div style="font-size:22px;">📍</div>
+      <div><strong style="font-size:14px;">Votre position</strong>
+      <div style="font-size:13px;color:#64748b;line-height:1.45;">Pour pointer vos arrivées et départs, et retrouver le site le plus proche.</div></div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:12px;background:#f8fafc;margin-bottom:10px;">
+      <div style="font-size:22px;">📷</div>
+      <div><strong style="font-size:14px;">L'appareil photo</strong>
+      <div style="font-size:13px;color:#64748b;line-height:1.45;">Pour scanner les codes-barres et photographier vos corrections.</div></div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:12px;background:#f8fafc;margin-bottom:20px;">
+      <div style="font-size:22px;">🔔</div>
+      <div><strong style="font-size:14px;">Les notifications</strong>
+      <div style="font-size:13px;color:#64748b;line-height:1.45;">Pour vous rappeler vos interventions avant l'heure.</div></div>
+    </div>
+
+    <button id="btn-autoriser" type="button" style="width:100%;padding:14px;border:0;border-radius:12px;background:#1565c0;color:#fff;font-size:15px;font-weight:600;">Autoriser</button>
+    <button id="btn-plus-tard-autor" type="button" style="width:100%;margin-top:8px;padding:12px;border:0;border-radius:12px;background:transparent;color:#64748b;font-size:14px;">Plus tard</button>
+    <div id="autorisations-resultat" style="margin-top:16px;font-size:13px;line-height:1.5;"></div>
+  </div>
 </div>
 
 <div id="hors-ligne">Pas de connexion internet. L'application se rechargera dès le retour du réseau.</div>
@@ -113,7 +142,7 @@ body {
 (function() {
   // Numero de version de la coquille : visible au demarrage, il evite d'avoir
   // a deviner si une mise a jour est bien arrivee sur le telephone.
-  var VERSION_COQUILLE = 5;
+  var VERSION_COQUILLE = 6;
 
   var appli = document.getElementById('appli');
   // L'application installee gardait en memoire l'ancienne page Apps Script.
@@ -128,8 +157,110 @@ body {
     var attente = Math.max(0, dureeMinimum - (Date.now() - debutAnimation));
     setTimeout(function() {
       chargement.style.opacity = '0';
-      setTimeout(function() { chargement.style.display = 'none'; }, 350);
+      setTimeout(function() {
+        chargement.style.display = 'none';
+        proposerAutorisations();
+      }, 350);
     }, attente);
+  });
+
+  /* ---- Maintien de l'ecran allume ----
+   * Demande ici, dans la coquille : le verrou n'est accorde qu'a la page
+   * principale, jamais a ce qu'elle affiche a l'interieur. C'est pour cela
+   * que la demande faite depuis l'application restait sans effet.
+   */
+  var verrouEcran = null;
+
+  function garderEcranAllume() {
+    if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+    if (verrouEcran) return;
+    navigator.wakeLock.request('screen').then(function(v) {
+      verrouEcran = v;
+      v.addEventListener('release', function() { verrouEcran = null; });
+    }).catch(function() {});
+  }
+
+  document.addEventListener('visibilitychange', function() {
+    // Le verrou saute des que l'ecran s'eteint : on le redemande au retour.
+    if (document.visibilityState === 'visible') garderEcranAllume();
+  });
+  document.addEventListener('click', garderEcranAllume);
+  garderEcranAllume();
+
+  /* ---- Autorisations, demandees une seule fois ----
+   * Jusqu'ici, chaque autorisation etait demandee au premier usage, dans un
+   * cadre imbrique — ou la demande peut etre refusee sans rien afficher.
+   * Ici, elles sont demandees ensemble, depuis la page principale, avec une
+   * explication prealable.
+   */
+  var ecranAutorisations = document.getElementById('autorisations');
+
+  function autorisationsDejaVues() {
+    try { return localStorage.getItem('nettpro_autorisations') === 'ok'; }
+    catch (e) { return false; }
+  }
+
+  function proposerAutorisations() {
+    if (autorisationsDejaVues()) return;
+    ecranAutorisations.style.display = 'block';
+  }
+
+  document.getElementById('btn-plus-tard-autor').addEventListener('click', function() {
+    ecranAutorisations.style.display = 'none';
+  });
+
+  document.getElementById('btn-autoriser').addEventListener('click', function() {
+    var bouton = this;
+    var resultat = document.getElementById('autorisations-resultat');
+    bouton.disabled = true;
+    bouton.textContent = 'Demande en cours…';
+    var lignes = [];
+
+    var etapes = [];
+
+    etapes.push(new Promise(function(resoudre) {
+      if (!navigator.geolocation) { lignes.push('📍 Position : non disponible sur cet appareil'); resoudre(); return; }
+      navigator.geolocation.getCurrentPosition(
+        function() { lignes.push('📍 Position : autorisée'); resoudre(); },
+        function() { lignes.push('📍 Position : refusée'); resoudre(); },
+        { timeout: 10000 }
+      );
+    }));
+
+    etapes.push(new Promise(function(resoudre) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        lignes.push('📷 Caméra : non disponible'); resoudre(); return;
+      }
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
+        .then(function(flux) {
+          // On relache aussitot : il s'agissait d'obtenir l'accord, pas de filmer.
+          flux.getTracks().forEach(function(p) { p.stop(); });
+          lignes.push('📷 Caméra : autorisée');
+          resoudre();
+        })
+        .catch(function() { lignes.push('📷 Caméra : refusée'); resoudre(); });
+    }));
+
+    etapes.push(new Promise(function(resoudre) {
+      if (!('Notification' in window)) { lignes.push('🔔 Notifications : non disponibles'); resoudre(); return; }
+      Notification.requestPermission().then(function(etat) {
+        lignes.push('🔔 Notifications : ' + (etat === 'granted' ? 'autorisées' : 'refusées'));
+        resoudre();
+      }).catch(function() { lignes.push('🔔 Notifications : refusées'); resoudre(); });
+    }));
+
+    Promise.all(etapes).then(function() {
+      try { localStorage.setItem('nettpro_autorisations', 'ok'); } catch (e) {}
+      var refus = lignes.filter(function(l) { return l.indexOf('refus') !== -1; });
+      resultat.innerHTML = lignes.map(function(l) { return '<div>' + l + '</div>'; }).join('')
+        + (refus.length
+            ? '<div style="margin-top:12px;padding:10px;border-radius:10px;background:#fef2f2;color:#b91c1c;">'
+              + 'Pour réactiver une autorisation refusée : réglages du téléphone, applications, NETTPRO, autorisations.</div>'
+            : '');
+      bouton.textContent = 'Continuer';
+      bouton.disabled = false;
+      bouton.onclick = function() { ecranAutorisations.style.display = 'none'; };
+    });
   });
 
   function majReseau() {

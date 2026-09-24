@@ -6,7 +6,7 @@
  * toujours etre fraiches.
  * Changer VERSION a chaque modification de la coquille force la mise a jour.
  */
-const VERSION = 'nettpro-coquille-v5';
+const VERSION = 'nettpro-coquille-v6';
 const FICHIERS = [
   './',
   './index.html',
