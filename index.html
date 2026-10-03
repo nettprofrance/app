@@ -67,6 +67,59 @@ body {
   #btn-plus-tard { background: #334155; color: #e2e8f0; }
   #etapes { display: none; margin-top: 12px; font-size: 14px; line-height: 1.5; color: #e2e8f0; }
   #etapes ol { margin: 6px 0 0; padding-left: 20px; }
+  /* ---- Ecran de secours hors connexion ---- */
+  #hl-ecran { display: none; position: fixed; inset: 0; z-index: 35; background: #f8fafc; overflow-y: auto;
+    padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 24px);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; }
+  #hl-entete { background: #0f172a; color: #e2e8f0; border-radius: 14px; padding: 12px 14px; }
+  #hl-entete h1 { margin: 0 0 6px; font-size: 16px; }
+  .hl-etat-ligne { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; font-size: 13px; }
+  .hl-etat-ligne b { color: #fff; }
+  .hl-etat-ligne .hl-alerte { color: #fca5a5; }
+  #hl-onglets { display: flex; gap: 6px; margin: 12px 0; overflow-x: auto; }
+  #hl-onglets button { flex: 0 0 auto; border: 1px solid #cbd5e1; background: #fff; color: #334155;
+    border-radius: 999px; padding: 8px 14px; font-size: 13px; }
+  #hl-onglets button.actif { background: #1565c0; border-color: #1565c0; color: #fff; font-weight: 600; }
+  .hl-bloc { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; }
+  .hl-titre { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .hl-aide { margin: 0 0 12px; font-size: 13px; color: #64748b; line-height: 1.45; }
+  .hl-champ { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 10px;
+    padding: 10px 12px; font-size: 16px; background: #fff; color: #0f172a; margin-top: 4px; }
+  .hl-label { display: block; font-size: 13px; color: #475569; margin-bottom: 12px; }
+  .hl-cache { display: none; }
+  .hl-actions-ligne { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .hl-principal, .hl-secondaire, .hl-retour { border-radius: 10px; padding: 12px 14px; font-size: 14px;
+    font-weight: 600; border: 0; flex: 1 1 auto; min-height: 44px; }
+  .hl-principal { background: #1565c0; color: #fff; }
+  .hl-principal:disabled { background: #94a3b8; }
+  .hl-secondaire { background: #e2e8f0; color: #0f172a; }
+  .hl-retour { background: none; color: #1565c0; padding: 4px 0; text-align: left; font-weight: 500; }
+  .hl-fait { background: #16a34a !important; color: #fff !important; }
+  .hl-liste { display: flex; flex-direction: column; gap: 8px; }
+  .hl-item { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+    width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; min-height: 44px; }
+  .hl-item-nom { font-size: 14px; font-weight: 600; }
+  .hl-item-sous { font-size: 12px; color: #64748b; }
+  .hl-carte { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+  .hl-coche { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; padding: 10px 0; line-height: 1.4; }
+  .hl-coche input { width: 22px; height: 22px; flex-shrink: 0; margin-top: 1px; }
+  .hl-vide { color: #64748b; font-size: 14px; padding: 10px 0; }
+  .hl-zone { border-top: 1px solid #e2e8f0; padding-top: 10px; margin-top: 10px; }
+  .hl-zone-titre { font-size: 13px; font-weight: 600; color: #1565c0; text-transform: uppercase; letter-spacing: .03em; }
+  .hl-tache { padding: 10px 0; border-bottom: 1px dashed #e2e8f0; }
+  .hl-tache-nom { font-size: 14px; margin-bottom: 6px; }
+  .hl-notes { display: flex; flex-wrap: wrap; gap: 5px; }
+  .hl-note { border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; padding: 8px 10px;
+    font-size: 12px; min-height: 38px; }
+  .hl-note.actif { background: #1565c0; border-color: #1565c0; color: #fff; font-weight: 600; }
+  .hl-ok { color: #16a34a; font-size: 12px; margin-top: 4px; }
+  .hl-alerte { color: #dc2626; font-size: 12px; margin-top: 4px; }
+  .hl-journal { font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; max-height: 60vh;
+    overflow-y: auto; background: #0f172a; border-radius: 10px; padding: 10px; color: #cbd5e1; }
+  .hl-journal span { color: #64748b; }
+  .hl-journal .hl-j-ok { color: #86efac; }
+  .hl-journal .hl-j-alerte { color: #fcd34d; }
+  .hl-journal .hl-j-erreur { color: #fca5a5; }
 </style>
 </head>
 <body>
@@ -129,6 +182,22 @@ body {
 
 <div id="trace" style="display:none;position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 8px);z-index:90;background:rgba(15,23,42,.92);color:#a7f3d0;font:12px/1.5 monospace;padding:8px 10px;border-radius:10px;max-height:40vh;overflow-y:auto;"></div>
 
+
+<!-- Ecran de secours : affiche a la place de l'application des que le reseau
+     disparait. Il vit dans la coquille, donc sur notre domaine, donc en
+     cache : c'est la seule partie qui peut fonctionner sans reseau. -->
+<div id="hl-ecran">
+  <div id="hl-entete">
+    <h1>NETTPRO — hors connexion</h1>
+    <div id="hl-etat"></div>
+  </div>
+  <div id="hl-onglets"></div>
+  <div id="hl-contenu"></div>
+  <div class="hl-actions-ligne">
+    <button type="button" class="hl-secondaire" id="hl-reessayer">Réessayer la connexion</button>
+  </div>
+</div>
+
 <div id="hors-ligne">Pas de connexion internet. L'application se rechargera dès le retour du réseau.</div>
 
 <!-- L'application Apps Script, affichee en plein ecran.
@@ -159,7 +228,7 @@ body {
 (function() {
   // Numero de version de la coquille : visible au demarrage, il evite d'avoir
   // a deviner si une mise a jour est bien arrivee sur le telephone.
-  var VERSION_COQUILLE = 13;
+  var VERSION_COQUILLE = 14;
 
   var appli = document.getElementById('appli');
   // L'application installee gardait en memoire l'ancienne page Apps Script.
@@ -440,6 +509,9 @@ body {
     tracer('reçu : ' + m.nettpro);
     if (m.nettpro === 'ouvrir-scanner') ouvrirScanner();
     if (m.nettpro === 'demander-position') fournirPosition();
+    if (m.nettpro === 'instantane' && m.donnees) { enregistrerInstantane(m.donnees); }
+    if (m.nettpro === 'demander-file') { fournirFile(); }
+    if (m.nettpro === 'file-resultat') { traiterResultatsFile(m.resultats); }
     if (m.nettpro === 'demander-jeton') {
       obtenirJetonNotification().then(function(j) {
         jetonAppareil = j;
@@ -464,6 +536,10 @@ body {
   var lecteurZXing = null;
   var dernierCode = '';
   var momentDernierCode = 0;
+
+  // Quand l'ecran hors connexion a demande le scanner, c'est lui qui recoit
+  // le code, et non l'application.
+  var attenteScanHL = null;
 
   function ouvrirScanner() {
     var ecran = document.getElementById('scanner');
@@ -556,6 +632,14 @@ body {
     if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} }
     setTimeout(function() {
       fermerScanner();
+      // Hors connexion, le code lu ne part pas vers l'application : il est
+      // traite sur place par l'ecran de secours.
+      if (attenteScanHL) {
+        var suite = attenteScanHL;
+        attenteScanHL = null;
+        suite(code);
+        return;
+      }
       repondre('scanner-resultat', { code: code });
     }, 550);
   }
@@ -609,12 +693,921 @@ body {
     }).catch(function(e) { tracer('jeton refuse : ' + e); return null; });
   }
 
-  function majReseau() {
-    horsLigne.style.display = navigator.onLine ? 'none' : 'block';
+  /* ===================================================================
+   * TRAVAIL HORS CONNEXION
+   * -------------------------------------------------------------------
+   * L'application est servie par Google : un service worker ne peut mettre
+   * en cache que sa propre origine, donc elle ne peut pas fonctionner sans
+   * reseau. La coquille, elle, est sur notre domaine et reste disponible.
+   * Elle garde donc une photo des donnees, affiche ses propres ecrans quand
+   * le reseau disparait, et accumule les actions. Au retour du reseau, elle
+   * les confie a l'application, qui les rejoue avec google.script.run.
+   * La coquille ne parle jamais a Apps Script directement.
+   * =================================================================== */
+
+  var BASE = 'nettpro-hors-ligne';
+  var bd = null;
+  var instantane = null;
+  var fileEnMemoire = [];
+  var journal = [];
+  var ongletHL = null;
+  var ecranHL = null;
+
+  function journaliser(texte, niveau) {
+    var ligne = { t: new Date().toISOString(), m: texte, n: niveau || 'info' };
+    journal.push(ligne);
+    if (journal.length > 300) journal.shift();
+    try { localStorage.setItem('nettpro_journal', JSON.stringify(journal.slice(-300))); } catch (e) {}
+    tracer('[HL] ' + texte);
+    // Seulement si le journal est l'onglet affiche : sinon, chaque ligne
+    // ecrite remplacait l'ecran en cours — on perdait sa saisie en plein
+    // inventaire, au moment precis ou l'action etait mise en file.
+    if (ecranHL && ecranHL.style.display !== 'none' && ongletHL === 'journal') rendreJournal();
   }
-  window.addEventListener('online', function() { majReseau(); appli.src = appli.src; });
+
+  try {
+    var sauve = localStorage.getItem('nettpro_journal');
+    if (sauve) journal = JSON.parse(sauve) || [];
+  } catch (e) { journal = []; }
+
+  /* ---- Reserve sur le telephone ----
+   * IndexedDB plutot que localStorage : les photos sont des donnees binaires
+   * et depasseraient tres vite les quelques megaoctets de localStorage. */
+  function ouvrirBase() {
+    return new Promise(function(resoudre, rejeter) {
+      if (bd) { resoudre(bd); return; }
+      if (!window.indexedDB) { rejeter(new Error('IndexedDB indisponible')); return; }
+      var d = indexedDB.open(BASE, 1);
+      d.onupgradeneeded = function(e) {
+        var base = e.target.result;
+        if (!base.objectStoreNames.contains('reserve')) base.createObjectStore('reserve', { keyPath: 'cle' });
+        if (!base.objectStoreNames.contains('file')) base.createObjectStore('file', { keyPath: 'id' });
+      };
+      d.onsuccess = function() { bd = d.result; resoudre(bd); };
+      d.onerror = function() { rejeter(d.error || new Error('ouverture impossible')); };
+    });
+  }
+
+  function transaction(magasin, mode) {
+    return ouvrirBase().then(function(base) {
+      return base.transaction(magasin, mode).objectStore(magasin);
+    });
+  }
+
+  function attendre(requete) {
+    return new Promise(function(resoudre, rejeter) {
+      requete.onsuccess = function() { resoudre(requete.result); };
+      requete.onerror = function() { rejeter(requete.error); };
+    });
+  }
+
+  function enregistrerInstantane(donnees) {
+    instantane = donnees;
+    return transaction('reserve', 'readwrite')
+      .then(function(m) { return attendre(m.put({ cle: 'instantane', donnees: donnees, le: Date.now() })); })
+      .then(function() {
+        journaliser('photo des données reçue (' + (donnees.profil || '?') + ', '
+          + ((donnees.sites || []).length) + ' sites, '
+          + ((donnees.stock && donnees.stock.articles || []).length) + ' articles)');
+      })
+      .catch(function(e) { journaliser('photo non enregistrée : ' + e.message, 'erreur'); });
+  }
+
+  function chargerInstantane() {
+    return transaction('reserve', 'readonly')
+      .then(function(m) { return attendre(m.get('instantane')); })
+      .then(function(r) { instantane = r ? r.donnees : null; return instantane; })
+      .catch(function() { return null; });
+  }
+
+  function chargerFile() {
+    return transaction('file', 'readonly')
+      .then(function(m) { return attendre(m.getAll()); })
+      .then(function(r) {
+        fileEnMemoire = (r || []).sort(function(a, b) { return a.cree - b.cree; });
+        return fileEnMemoire;
+      })
+      .catch(function() { fileEnMemoire = []; return fileEnMemoire; });
+  }
+
+  /* Un numero unique par action : c'est lui qui rend un envoi parti deux fois
+   * inoffensif, le serveur reconnaissant une action deja enregistree. */
+  function numeroUnique() {
+    if (window.crypto && crypto.randomUUID) return 'hl-' + crypto.randomUUID();
+    return 'hl-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function mettreEnFile(fonction, donnees, resume) {
+    var action = {
+      id: numeroUnique(),
+      fonction: fonction,
+      donnees: donnees,
+      resume: resume || fonction,
+      // Heure du telephone au moment du geste : c'est elle qui sera inscrite
+      // au classeur, pas l'heure de la remontee.
+      horodatage: new Date().toISOString(),
+      cree: Date.now()
+    };
+    return transaction('file', 'readwrite')
+      .then(function(m) { return attendre(m.put(action)); })
+      .then(function() {
+        fileEnMemoire.push(action);
+        journaliser('en attente : ' + action.resume);
+        majEnteteHL();
+        return action;
+      })
+      .catch(function(e) {
+        journaliser('MISE EN FILE IMPOSSIBLE : ' + e.message, 'erreur');
+        alert('Impossible d’enregistrer sur le téléphone. Notez l’information et prévenez la direction.');
+        throw e;
+      });
+  }
+
+  function retirerDeLaFile(id) {
+    return transaction('file', 'readwrite')
+      .then(function(m) { return attendre(m.delete(id)); })
+      .then(function() {
+        fileEnMemoire = fileEnMemoire.filter(function(a) { return a.id !== id; });
+      })
+      .catch(function() {});
+  }
+
+  /* ---- Echanges avec l'application ---- */
+  function envoyerAApplication(type, donnees) {
+    if (!demandeur) return;
+    try { demandeur.postMessage(Object.assign({ nettpro: type }, donnees || {}), '*'); } catch (e) {}
+  }
+
+  function fournirFile() {
+    chargerFile().then(function(actions) {
+      journaliser('file réclamée par l’application : ' + actions.length + ' action(s)');
+      envoyerAApplication('file', {
+        actions: actions.map(function(a) {
+          return { id: a.id, fonction: a.fonction, donnees: a.donnees, horodatage: a.horodatage };
+        })
+      });
+    });
+  }
+
+  function traiterResultatsFile(resultats) {
+    if (!Array.isArray(resultats)) return;
+    var partis = 0, gardes = 0, refuses = 0;
+    var suite = Promise.resolve();
+    resultats.forEach(function(r) {
+      var action = fileEnMemoire.filter(function(a) { return a.id === r.actionId; })[0];
+      var nom = action ? action.resume : r.actionId;
+      if (r.ok || r.definitif) {
+        // Retiree dans les deux cas : une action acceptee est faite, une
+        // action refusee pour de bon ne passera jamais, inutile de la
+        // renvoyer a chaque ouverture. Le journal en garde la trace.
+        suite = suite.then(function() { return retirerDeLaFile(r.actionId); });
+        if (r.ok) {
+          partis++;
+          journaliser('envoyé : ' + nom + (r.conflit ? ' — CONFLIT : ' + r.message : '')
+            + (r.horlogeSuspecte ? ' — écart d’horloge signalé' : ''),
+            r.conflit ? 'alerte' : 'ok');
+        } else {
+          refuses++;
+          journaliser('REFUSÉ définitivement : ' + nom + ' — ' + (r.message || ''), 'erreur');
+        }
+      } else {
+        gardes++;
+        journaliser('gardé pour un prochain essai : ' + nom + ' — ' + (r.message || ''), 'alerte');
+      }
+    });
+    suite.then(function() {
+      journaliser('bilan : ' + partis + ' envoyée(s), ' + refuses + ' refusée(s), ' + gardes + ' en attente');
+      majEnteteHL();
+    });
+  }
+
+  /* ---- Bascule entre l'application et l'ecran de secours ---- */
+  function reseauDisponible() { return navigator.onLine; }
+
+  function ouvrirEcranHL(manuel) {
+    if (!ecranHL) return;
+    chargerInstantane().then(function() {
+      return chargerFile();
+    }).then(function() {
+      ecranHL.style.display = 'block';
+      ecranHL.dataset.manuel = manuel ? '1' : '';
+      document.getElementById('hors-ligne').style.display = 'none';
+      majEnteteHL();
+      if (!ongletHL) ongletHL = ongletsDisponibles()[0];
+      afficherOngletHL(ongletHL);
+      journaliser('écran hors connexion ouvert' + (manuel ? ' (à la demande)' : ''));
+    });
+  }
+
+  function fermerEcranHL() {
+    if (!ecranHL) return;
+    ecranHL.style.display = 'none';
+    journaliser('écran hors connexion fermé');
+  }
+
+  function profilHL() { return (instantane && instantane.profil) || ''; }
+
+  function ongletsDisponibles() {
+    var liste = [];
+    var p = profilHL();
+    if (instantane && instantane.stock && (instantane.stock.articles || []).length) liste.push('stock');
+    if (p === 'agent') liste.push('journee');
+    if (p === 'responsable' || p === 'direction') liste.push('controles');
+    liste.push('journal');
+    return liste;
+  }
+
+  var TITRES_ONGLET = {
+    stock: 'Stock', journee: 'Ma journée', controles: 'Contrôles', journal: 'Journal'
+  };
+
+  function majEnteteHL() {
+    var e = document.getElementById('hl-etat');
+    if (!e) return;
+    var age = instantane && instantane.pris ? instantane.pris : null;
+    var n = fileEnMemoire.length;
+    e.innerHTML =
+      '<div class="hl-etat-ligne"><b>' + (reseauDisponible() ? 'Réseau revenu' : 'Pas de réseau') + '</b>'
+      + (age ? '<span>Données du ' + age + '</span>' : '<span class="hl-alerte">Aucune donnée en réserve</span>')
+      + '</div>'
+      + '<div class="hl-etat-ligne"><span>' + (n ? n + ' action' + (n > 1 ? 's' : '') + ' en attente d’envoi' : 'Rien en attente') + '</span></div>';
+    var onglets = document.getElementById('hl-onglets');
+    if (onglets) {
+      onglets.innerHTML = ongletsDisponibles().map(function(o) {
+        return '<button type="button" data-onglet-hl="' + o + '"' + (o === ongletHL ? ' class="actif"' : '') + '>'
+          + TITRES_ONGLET[o] + (o === 'journal' && journal.length ? ' (' + journal.length + ')' : '') + '</button>';
+      }).join('');
+      Array.prototype.forEach.call(onglets.querySelectorAll('[data-onglet-hl]'), function(b) {
+        b.addEventListener('click', function() { afficherOngletHL(b.dataset.ongletHl); });
+      });
+    }
+  }
+
+  function afficherOngletHL(nom) {
+    ongletHL = nom;
+    majEnteteHL();
+    var zone = document.getElementById('hl-contenu');
+    if (!zone) return;
+    if (nom === 'stock') rendreStock();
+    else if (nom === 'journee') rendreJournee();
+    else if (nom === 'controles') rendreControles();
+    else rendreJournal();
+  }
+
+  function echapper(t) {
+    return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ---- Journal de bord ----
+   * Sans reseau il n'y a ni console ni message d'erreur a montrer : ce journal
+   * est le seul moyen de comprendre apres coup ce qui s'est passe au sous-sol. */
+  function rendreJournal() {
+    var zone = document.getElementById('hl-contenu');
+    if (!zone) return;
+    var lignes = journal.slice().reverse();
+    zone.innerHTML = '<div class="hl-bloc">'
+      + '<div class="hl-titre">Journal de bord</div>'
+      + '<p class="hl-aide">Ce qui a été enregistré, envoyé ou refusé. À montrer en cas de problème.</p>'
+      + '<div class="hl-actions-ligne">'
+      + '<button type="button" class="hl-secondaire" id="hl-copier-journal">Copier le journal</button>'
+      + '<button type="button" class="hl-secondaire" id="hl-vider-journal">Vider</button>'
+      + '</div>'
+      + '<div class="hl-journal">' + (lignes.length ? lignes.map(function(l) {
+          var h = new Date(l.t).toLocaleString('fr-FR');
+          return '<div class="hl-j-' + l.n + '"><span>' + h + '</span> ' + echapper(l.m) + '</div>';
+        }).join('') : '<div class="hl-vide">Rien à signaler.</div>')
+      + '</div></div>';
+    document.getElementById('hl-copier-journal').addEventListener('click', function() {
+      var texte = journal.map(function(l) { return new Date(l.t).toLocaleString('fr-FR') + ' [' + l.n + '] ' + l.m; }).join('\n');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texte).then(function() { this.textContent = 'Copié'; }.bind(this))
+          .catch(function() { alert(texte); });
+      } else { alert(texte); }
+    });
+    document.getElementById('hl-vider-journal').addEventListener('click', function() {
+      journal = [];
+      try { localStorage.removeItem('nettpro_journal'); } catch (e) {}
+      rendreJournal();
+    });
+  }
+
+  /* ---- Stock et inventaire ---- */
+  var filtreStock = '';
+  var articleChoisi = null;
+
+  function articlesStock() {
+    return (instantane && instantane.stock && instantane.stock.articles) || [];
+  }
+  function produitsStock() {
+    return (instantane && instantane.stock && instantane.stock.produits) || [];
+  }
+  function fractionsStock() {
+    return (instantane && instantane.stock && instantane.stock.fractions)
+      || [{ valeur: 0, libelle: 'Vide' }, { valeur: 0.5, libelle: 'Moitié' }, { valeur: 1, libelle: 'Plein' }];
+  }
+
+  function produitParCodeBarres(code) {
+    var c = String(code || '').trim();
+    if (!c) return null;
+    return produitsStock().filter(function(p) { return String(p.codeBarres || '').trim() === c; })[0] || null;
+  }
+
+  function rendreStock() {
+    var zone = document.getElementById('hl-contenu');
+    var articles = articlesStock();
+    if (!articles.length) {
+      zone.innerHTML = '<div class="hl-bloc"><div class="hl-vide">Aucun article en réserve. '
+        + 'Ouvrez l’application avec du réseau une fois, puis revenez.</div></div>';
+      return;
+    }
+    var f = filtreStock.toLowerCase();
+    var visibles = articles.filter(function(a) {
+      if (!f) return true;
+      return String(a.designation || '').toLowerCase().indexOf(f) !== -1
+        || String(a.reference || '').toLowerCase().indexOf(f) !== -1
+        || String(a.categorie || '').toLowerCase().indexOf(f) !== -1;
+    }).slice(0, 80);
+
+    zone.innerHTML = '<div class="hl-bloc">'
+      + '<div class="hl-titre">Inventaire</div>'
+      + '<p class="hl-aide">Comptez ce que vous avez sous les yeux. Tout part dès le retour du réseau.</p>'
+      + '<div class="hl-actions-ligne">'
+      + '<button type="button" class="hl-principal" id="hl-scan">Scanner un code-barres</button>'
+      + '</div>'
+      + '<input type="search" id="hl-recherche" class="hl-champ" placeholder="Chercher un article…" value="' + echapper(filtreStock) + '">'
+      + '<div class="hl-liste">' + (visibles.length ? visibles.map(function(a) {
+          var qte = (instantane.stock.depot || {})[a.id];
+          return '<button type="button" class="hl-item" data-article="' + echapper(a.id) + '">'
+            + '<span class="hl-item-nom">' + echapper(a.designation) + '</span>'
+            + '<span class="hl-item-sous">' + echapper(a.categorie || '') + ' · ' + echapper(a.unite || '')
+            + (qte !== undefined ? ' · au classeur : ' + qte : '') + '</span></button>';
+        }).join('') : '<div class="hl-vide">Aucun article ne correspond.</div>')
+      + '</div></div>';
+
+    document.getElementById('hl-recherche').addEventListener('input', function() {
+      filtreStock = this.value;
+      var position = this.selectionStart;
+      rendreStock();
+      var champ = document.getElementById('hl-recherche');
+      champ.focus();
+      try { champ.setSelectionRange(position, position); } catch (e) {}
+    });
+    document.getElementById('hl-scan').addEventListener('click', function() { scannerPourStock(); });
+    Array.prototype.forEach.call(zone.querySelectorAll('[data-article]'), function(b) {
+      b.addEventListener('click', function() {
+        articleChoisi = articles.filter(function(a) { return a.id === b.dataset.article; })[0];
+        rendreSaisieArticle(null);
+      });
+    });
+  }
+
+  function scannerPourStock() {
+    attenteScanHL = function(code) {
+      var produit = produitParCodeBarres(code);
+      if (produit) {
+        articleChoisi = articlesStock().filter(function(a) { return a.id === produit.articleId; })[0] || null;
+        journaliser('code-barres reconnu : ' + code + ' → ' + (articleChoisi ? articleChoisi.designation : 'article inconnu'));
+        rendreSaisieArticle(produit);
+      } else {
+        journaliser('code-barres inconnu : ' + code);
+        articleChoisi = null;
+        rendreSaisieArticle({ codeBarres: code, inconnu: true });
+      }
+    };
+    ouvrirScanner();
+  }
+
+  function rendreSaisieArticle(produit) {
+    var zone = document.getElementById('hl-contenu');
+    var fractions = fractionsStock();
+    var inconnu = !articleChoisi;
+    zone.innerHTML = '<div class="hl-bloc">'
+      + '<button type="button" class="hl-retour" id="hl-retour-stock">← Retour à la liste</button>'
+      + '<div class="hl-titre">' + (inconnu ? 'Nouvel article' : echapper(articleChoisi.designation)) + '</div>'
+      + (inconnu
+        ? '<p class="hl-aide">Ce code-barres n’est pas connu. Donnez-lui un nom, il sera créé au retour du réseau.</p>'
+          + '<label class="hl-label">Désignation'
+          + '<input type="text" id="hl-designation" class="hl-champ" placeholder="Ex. Sacs poubelle 100 L"></label>'
+          + '<label class="hl-label">Unité'
+          + '<select id="hl-unite" class="hl-champ">'
+          + ((instantane.stock.unites || ['piece'])).map(function(u) { return '<option>' + echapper(u) + '</option>'; }).join('')
+          + '</select></label>'
+        : '<p class="hl-aide">' + echapper(articleChoisi.categorie || '') + ' · compté en ' + echapper(articleChoisi.unite || 'unité') + '</p>')
+      + (produit && produit.codeBarres ? '<p class="hl-aide">Code-barres : ' + echapper(produit.codeBarres) + '</p>' : '')
+      + '<label class="hl-label">Nombre de contenants entiers'
+      + '<input type="number" id="hl-quantite" class="hl-champ" min="0" step="1" value="0" inputmode="numeric"></label>'
+      + '<label class="hl-label">Contenant entamé'
+      + '<select id="hl-fraction" class="hl-champ">'
+      + '<option value="0">Aucun</option>'
+      + fractions.map(function(fr) { return '<option value="' + fr.valeur + '">' + echapper(fr.libelle) + '</option>'; }).join('')
+      + '</select></label>'
+      + '<label class="hl-label">Où ?'
+      + '<select id="hl-emplacement" class="hl-champ"><option value="depot">Dépôt</option><option value="site">Un site</option></select></label>'
+      + '<label class="hl-label hl-cache" id="hl-site-wrap">Site'
+      + '<select id="hl-site" class="hl-champ">'
+      + ((instantane.sites || []).map(function(s) { return '<option>' + echapper(s.nom) + '</option>'; }).join(''))
+      + '</select></label>'
+      + '<label class="hl-coche"><input type="checkbox" id="hl-remplacer" checked>'
+      + '<span>C’est un comptage complet (remplace la valeur) — décochez pour ajouter à l’existant</span></label>'
+      + '<div class="hl-actions-ligne">'
+      + '<button type="button" class="hl-principal" id="hl-valider-stock">Enregistrer</button>'
+      + '</div></div>';
+
+    document.getElementById('hl-retour-stock').addEventListener('click', rendreStock);
+    document.getElementById('hl-emplacement').addEventListener('change', function() {
+      document.getElementById('hl-site-wrap').classList.toggle('hl-cache', this.value !== 'site');
+    });
+    document.getElementById('hl-valider-stock').addEventListener('click', function() {
+      var bouton = this;
+      var designation = inconnu
+        ? String((document.getElementById('hl-designation') || {}).value || '').trim()
+        : articleChoisi.designation;
+      if (!designation) { alert('Donnez un nom à cet article.'); return; }
+      var quantite = Number(document.getElementById('hl-quantite').value) || 0;
+      var fraction = Number(document.getElementById('hl-fraction').value) || 0;
+      if (quantite <= 0 && fraction <= 0) { alert('Indiquez une quantité.'); return; }
+      var emplacement = document.getElementById('hl-emplacement').value;
+      var site = emplacement === 'site' ? document.getElementById('hl-site').value : '';
+      if (emplacement === 'site' && !site) { alert('Choisissez le site.'); return; }
+
+      bouton.disabled = true;
+      mettreEnFile('enregistrerInventaireWeb', {
+        articleId: articleChoisi ? articleChoisi.id : '',
+        designation: designation,
+        unite: inconnu ? document.getElementById('hl-unite').value : articleChoisi.unite,
+        categorie: articleChoisi ? articleChoisi.categorie : 'Divers',
+        quantite: quantite,
+        fraction: fraction,
+        emplacement: emplacement,
+        site: site,
+        remplacer: document.getElementById('hl-remplacer').checked,
+        codeBarres: produit && produit.codeBarres ? produit.codeBarres : '',
+        produitId: produit && produit.id ? produit.id : '',
+        marque: produit && produit.marque ? produit.marque : '',
+        nomConditionnement: produit && produit.nomConditionnement ? produit.nomConditionnement : '',
+        contenance: produit && produit.contenance ? produit.contenance : 0,
+        saisiPar: (instantane && instantane.nom) || ''
+      }, 'inventaire ' + designation + ' = ' + (quantite + fraction))
+        .then(function() {
+          filtreStock = '';
+          rendreStock();
+        })
+        .catch(function() { bouton.disabled = false; });
+    });
+  }
+
+  /* ---- Journee de l'agent ---- */
+  function rendreJournee() {
+    var zone = document.getElementById('hl-contenu');
+    var interventions = (instantane && instantane.mesInterventions) || [];
+    zone.innerHTML = '<div class="hl-bloc">'
+      + '<div class="hl-titre">Ma journée</div>'
+      + '<p class="hl-aide">Pointages et tâches. Tout part dès le retour du réseau.</p>'
+      + (interventions.length ? interventions.map(function(i, n) {
+          return '<div class="hl-carte">'
+            + '<div class="hl-item-nom">' + echapper(i.client || 'Site') + '</div>'
+            + '<div class="hl-item-sous">' + echapper(i.dateDebut || '') + ' ' + echapper(i.heureDebut || '')
+            + ' · ' + echapper(i.adresse || '') + '</div>'
+            + '<div class="hl-actions-ligne">'
+            + '<button type="button" class="hl-principal" data-pointer-debut="' + n + '">Début</button>'
+            + '<button type="button" class="hl-secondaire" data-pointer-fin="' + n + '">Fin</button>'
+            + '<button type="button" class="hl-secondaire" data-taches="' + n + '">Tâches</button>'
+            + '</div>'
+            + '<button type="button" class="hl-secondaire" data-anomalie="' + n + '">Signaler une anomalie</button>'
+            + '</div>';
+        }).join('') : '<div class="hl-vide">Aucune intervention en réserve.</div>')
+      + '</div>';
+
+    Array.prototype.forEach.call(zone.querySelectorAll('[data-pointer-debut]'), function(b) {
+      b.addEventListener('click', function() { pointer(interventions[b.dataset.pointerDebut], 'debut', b); });
+    });
+    Array.prototype.forEach.call(zone.querySelectorAll('[data-pointer-fin]'), function(b) {
+      b.addEventListener('click', function() { pointer(interventions[b.dataset.pointerFin], 'fin', b); });
+    });
+    Array.prototype.forEach.call(zone.querySelectorAll('[data-taches]'), function(b) {
+      b.addEventListener('click', function() { rendreTaches(interventions[b.dataset.taches]); });
+    });
+    Array.prototype.forEach.call(zone.querySelectorAll('[data-anomalie]'), function(b) {
+      b.addEventListener('click', function() { rendreAnomalie(interventions[b.dataset.anomalie]); });
+    });
+  }
+
+  /* Le GPS met beaucoup plus longtemps sans reseau : le telephone n'a plus
+   * l'aide des antennes pour se reperer. On n'attend donc pas la position
+   * pour enregistrer le pointage, on l'ajoute si elle arrive a temps. */
+  function positionAuMieux(delaiMs) {
+    return new Promise(function(resoudre) {
+      if (!navigator.geolocation) { resoudre(null); return; }
+      var rendu = false;
+      var minuteur = setTimeout(function() {
+        if (!rendu) { rendu = true; journaliser('position non obtenue en ' + (delaiMs / 1000) + ' s', 'alerte'); resoudre(null); }
+      }, delaiMs);
+      navigator.geolocation.getCurrentPosition(
+        function(p) {
+          if (rendu) return;
+          rendu = true; clearTimeout(minuteur);
+          resoudre({ lat: p.coords.latitude, lng: p.coords.longitude, precision: p.coords.accuracy });
+        },
+        function(e) {
+          if (rendu) return;
+          rendu = true; clearTimeout(minuteur);
+          journaliser('position refusée ou indisponible : ' + (e && e.message ? e.message : ''), 'alerte');
+          resoudre(null);
+        },
+        { enableHighAccuracy: true, timeout: delaiMs, maximumAge: 120000 }
+      );
+    });
+  }
+
+  /* Un pointage commence sans reseau n'a pas encore d'identifiant : il sera
+   * cree au classeur seulement au moment de la remontee. On retient donc le
+   * numero de l'action de debut, que la fin et les taches cochees designeront
+   * a leur tour. Le serveur fait le lien en rejouant la file dans l'ordre. */
+  function clePointage(intervention) {
+    return 'debut:' + (intervention.id || intervention.client || '');
+  }
+  function retenirDebutPointage(intervention, actionId) {
+    try { localStorage.setItem('nettpro_' + clePointage(intervention), actionId); } catch (e) {}
+  }
+  function debutPointageRetenu(intervention) {
+    try { return localStorage.getItem('nettpro_' + clePointage(intervention)) || ''; } catch (e) { return ''; }
+  }
+
+  function pointer(intervention, sens, bouton) {
+    if (!intervention) return;
+    if (sens === 'fin' && !debutPointageRetenu(intervention)) {
+      alert('Pointez d\u2019abord le début.');
+      return;
+    }
+    bouton.disabled = true;
+    bouton.textContent = 'Position…';
+    positionAuMieux(45000).then(function(pos) {
+      var donnees = {
+        agent: (instantane && instantane.nom) || '',
+        client: intervention.client || '',
+        lat: pos ? pos.lat : '',
+        lng: pos ? pos.lng : ''
+      };
+      if (sens === 'fin') donnees.__refDebut = debutPointageRetenu(intervention);
+      return mettreEnFile(
+        sens === 'debut' ? 'demarrerPointageWeb' : 'terminerPointageWeb',
+        donnees,
+        'pointage ' + sens + ' ' + (intervention.client || '')
+          + (pos ? '' : ' (sans position)')
+      );
+    }).then(function(action) {
+      if (sens === 'debut') retenirDebutPointage(intervention, action.id);
+      bouton.textContent = sens === 'debut' ? 'Début enregistré' : 'Fin enregistrée';
+      bouton.classList.add('hl-fait');
+    }).catch(function() {
+      bouton.disabled = false;
+      bouton.textContent = sens === 'debut' ? 'Début' : 'Fin';
+    });
+  }
+
+  function tachesDuSite(site) {
+    var zones = (instantane && instantane.zonesParSite && instantane.zonesParSite[site]) || {};
+    var liste = [];
+    Object.keys(zones).forEach(function(z) {
+      zones[z].forEach(function(t) { liste.push({ zone: z, tache: t.tache, id: t.id }); });
+    });
+    return liste;
+  }
+
+  function rendreTaches(intervention) {
+    var zone = document.getElementById('hl-contenu');
+    var taches = tachesDuSite(intervention.client);
+    zone.innerHTML = '<div class="hl-bloc">'
+      + '<button type="button" class="hl-retour" id="hl-retour-journee">← Retour</button>'
+      + '<div class="hl-titre">Tâches — ' + echapper(intervention.client || '') + '</div>'
+      + (taches.length ? '<div class="hl-liste">' + taches.map(function(t, n) {
+          return '<label class="hl-coche"><input type="checkbox" data-tache="' + n + '">'
+            + '<span><b>' + echapper(t.tache) + '</b><br><small>' + echapper(t.zone) + '</small></span></label>';
+        }).join('') + '</div>'
+        + '<div class="hl-actions-ligne"><button type="button" class="hl-principal" id="hl-valider-taches">Enregistrer les tâches faites</button></div>'
+        : '<div class="hl-vide">Aucune tâche en réserve pour ce site.</div>')
+      + '</div>';
+    document.getElementById('hl-retour-journee').addEventListener('click', rendreJournee);
+    var valider = document.getElementById('hl-valider-taches');
+    if (!valider) return;
+    valider.addEventListener('click', function() {
+      var cochees = [];
+      Array.prototype.forEach.call(zone.querySelectorAll('[data-tache]'), function(c) {
+        if (c.checked) cochees.push(taches[c.dataset.tache]);
+      });
+      if (!cochees.length) { alert('Cochez au moins une tâche.'); return; }
+      var refDebut = debutPointageRetenu(intervention);
+      if (!refDebut) { alert('Pointez d\u2019abord le début de l\u2019intervention.'); return; }
+      this.disabled = true;
+      // Les noms de champs sont ceux attendus par le serveur : site et non
+      // client, tacheId et non id, et le pointage designe par son action.
+      mettreEnFile('enregistrerTachesRealiseesWeb', {
+        agent: (instantane && instantane.nom) || '',
+        site: intervention.client || '',
+        __refDebut: refDebut,
+        taches: cochees.map(function(t) { return { tacheId: t.id, fait: true }; })
+      }, cochees.length + ' tâche(s) — ' + (intervention.client || ''))
+        .then(rendreJournee)
+        .catch(function() { valider.disabled = false; });
+    });
+  }
+
+  function rendreAnomalie(intervention) {
+    var zone = document.getElementById('hl-contenu');
+    var zones = Object.keys((instantane && instantane.zonesParSite && instantane.zonesParSite[intervention.client]) || {});
+    zone.innerHTML = '<div class="hl-bloc">'
+      + '<button type="button" class="hl-retour" id="hl-retour-journee2">← Retour</button>'
+      + '<div class="hl-titre">Anomalie — ' + echapper(intervention.client || '') + '</div>'
+      + '<label class="hl-label">Zone<select id="hl-ano-zone" class="hl-champ">'
+      + '<option value="">Non précisée</option>'
+      + zones.map(function(z) { return '<option>' + echapper(z) + '</option>'; }).join('')
+      + '</select></label>'
+      + '<label class="hl-label">Gravité<select id="hl-ano-gravite" class="hl-champ">'
+      + '<option>Faible</option><option selected>Moyenne</option><option>Critique</option></select></label>'
+      + '<label class="hl-label">Description<textarea id="hl-ano-desc" class="hl-champ" rows="4" placeholder="Ce que vous constatez"></textarea></label>'
+      + '<label class="hl-label">Photo (facultative)<input type="file" accept="image/*" capture="environment" id="hl-ano-photo" class="hl-champ"></label>'
+      + '<div class="hl-actions-ligne"><button type="button" class="hl-principal" id="hl-valider-ano">Signaler</button></div>'
+      + '</div>';
+    document.getElementById('hl-retour-journee2').addEventListener('click', rendreJournee);
+    document.getElementById('hl-valider-ano').addEventListener('click', function() {
+      var bouton = this;
+      var description = document.getElementById('hl-ano-desc').value.trim();
+      if (!description) { alert('Décrivez ce que vous constatez.'); return; }
+      bouton.disabled = true;
+      bouton.textContent = 'Enregistrement…';
+      var fichier = document.getElementById('hl-ano-photo').files[0];
+      compresserPhotoHL(fichier).then(function(photo) {
+        return mettreEnFile('creerAnomalieWeb', {
+          client: intervention.client || '',
+          zone: document.getElementById('hl-ano-zone').value,
+          description: description,
+          gravite: document.getElementById('hl-ano-gravite').value,
+          signaleePar: (instantane && instantane.nom) || '',
+          pieceJointeBase64: photo ? photo.base64 : null,
+          pieceJointeNom: photo ? photo.nom : null,
+          pieceJointeType: photo ? photo.type : null
+        }, 'anomalie ' + (intervention.client || ''));
+      }).then(rendreJournee)
+        .catch(function() { bouton.disabled = false; bouton.textContent = 'Signaler'; });
+    });
+  }
+
+  /* ---- Controle qualite du responsable ---- */
+  var controleEnCours = null;
+  var relevesControle = {};
+
+  function rendreControles() {
+    var zone = document.getElementById('hl-contenu');
+    var controles = (instantane && instantane.mesControles) || [];
+    zone.innerHTML = '<div class="hl-bloc">'
+      + '<div class="hl-titre">Contrôles qualité</div>'
+      + '<p class="hl-aide">Les contrôles planifiés avant la coupure. Le relevé part dès le retour du réseau.</p>'
+      + (controles.length ? controles.map(function(c, n) {
+          return '<button type="button" class="hl-item" data-controle="' + n + '">'
+            + '<span class="hl-item-nom">' + echapper(c.client || '') + '</span>'
+            + '<span class="hl-item-sous">' + echapper(c.date || '') + ' · ' + echapper(c.statut || '')
+            + (c.agentEvalue ? ' · agent : ' + echapper(c.agentEvalue) : '') + '</span></button>';
+        }).join('') : '<div class="hl-vide">Aucun contrôle planifié en réserve.</div>')
+      + '<div class="hl-actions-ligne">'
+      + '<button type="button" class="hl-secondaire" id="hl-controle-libre">Contrôler un autre site</button>'
+      + '</div></div>';
+    Array.prototype.forEach.call(zone.querySelectorAll('[data-controle]'), function(b) {
+      b.addEventListener('click', function() { ouvrirControle(controles[b.dataset.controle]); });
+    });
+    document.getElementById('hl-controle-libre').addEventListener('click', choisirSiteControle);
+  }
+
+  function choisirSiteControle() {
+    var zone = document.getElementById('hl-contenu');
+    var sites = (instantane && instantane.sites) || [];
+    zone.innerHTML = '<div class="hl-bloc">'
+      + '<button type="button" class="hl-retour" id="hl-retour-ctrl">← Retour</button>'
+      + '<div class="hl-titre">Quel site ?</div>'
+      + '<p class="hl-aide">Ce contrôle n’était pas planifié : il sera créé au retour du réseau.</p>'
+      + '<div class="hl-liste">' + sites.map(function(s, n) {
+          return '<button type="button" class="hl-item" data-site-ctrl="' + n + '">'
+            + '<span class="hl-item-nom">' + echapper(s.nom) + '</span></button>';
+        }).join('') + '</div></div>';
+    document.getElementById('hl-retour-ctrl').addEventListener('click', rendreControles);
+    Array.prototype.forEach.call(zone.querySelectorAll('[data-site-ctrl]'), function(b) {
+      b.addEventListener('click', function() {
+        ouvrirControle({ id: '', client: sites[b.dataset.siteCtrl].nom, nouveau: true });
+      });
+    });
+  }
+
+  function ouvrirControle(controle) {
+    controleEnCours = controle;
+    relevesControle = {};
+    rendreReleveControle();
+  }
+
+  function appreciationsHL() {
+    return (instantane && instantane.appreciations)
+      || ['Excellent', 'Bon', 'Moyen', 'Insuffisant', 'Très insuffisant'];
+  }
+
+  // Les memes regles que le serveur, appliquees ici : un releve refuse une
+  // fois remonte serait decouvert trop tard, de retour au bureau.
+  function photoObligatoire(appreciation) { return appreciation === 'Très insuffisant'; }
+  function commentaireObligatoire(appreciation) {
+    return ['Moyen', 'Insuffisant', 'Très insuffisant'].indexOf(appreciation) !== -1;
+  }
+
+  function rendreReleveControle() {
+    var zone = document.getElementById('hl-contenu');
+    var site = controleEnCours.client;
+    var zones = (instantane && instantane.zonesParSite && instantane.zonesParSite[site]) || {};
+    var noms = Object.keys(zones);
+    if (!noms.length) {
+      zone.innerHTML = '<div class="hl-bloc">'
+        + '<button type="button" class="hl-retour" id="hl-retour-ctrl3">← Retour</button>'
+        + '<div class="hl-vide">Aucun cahier des charges en réserve pour ' + echapper(site) + '.</div></div>';
+      document.getElementById('hl-retour-ctrl3').addEventListener('click', rendreControles);
+      return;
+    }
+    var apps = appreciationsHL();
+    zone.innerHTML = '<div class="hl-bloc">'
+      + '<button type="button" class="hl-retour" id="hl-retour-ctrl2">← Retour</button>'
+      + '<div class="hl-titre">' + echapper(site) + '</div>'
+      + '<p class="hl-aide">Une appréciation par tâche. Commentaire obligatoire à partir de « Moyen », photo à partir de « Très insuffisant ».</p>'
+      + noms.map(function(z) {
+          return '<div class="hl-zone"><div class="hl-zone-titre">' + echapper(z) + '</div>'
+            + zones[z].map(function(t) {
+                var cle = z + '||' + t.tache;
+                var r = relevesControle[cle] || {};
+                return '<div class="hl-tache" data-cle="' + echapper(cle) + '">'
+                  + '<div class="hl-tache-nom">' + echapper(t.tache) + '</div>'
+                  + '<div class="hl-notes">' + apps.map(function(a) {
+                      return '<button type="button" class="hl-note' + (r.appreciation === a ? ' actif' : '')
+                        + '" data-note="' + echapper(a) + '" data-cle-note="' + echapper(cle) + '">' + echapper(a) + '</button>';
+                    }).join('') + '</div>'
+                  + (commentaireObligatoire(r.appreciation)
+                    ? '<textarea class="hl-champ" rows="2" placeholder="Qu’est-ce qui ne va pas ?" data-com="' + echapper(cle) + '">' + echapper(r.commentaire || '') + '</textarea>'
+                    : '')
+                  + (photoObligatoire(r.appreciation)
+                    ? '<input type="file" accept="image/*" capture="environment" class="hl-champ" data-photo="' + echapper(cle) + '">'
+                      + (r.photo ? '<div class="hl-ok">Photo enregistrée</div>' : '<div class="hl-alerte">Photo obligatoire</div>')
+                    : '')
+                  + '</div>';
+              }).join('')
+            + '</div>';
+        }).join('')
+      + '<label class="hl-label">Commentaire général'
+      + '<textarea id="hl-ctrl-global" class="hl-champ" rows="3"></textarea></label>'
+      + '<div class="hl-actions-ligne">'
+      + '<button type="button" class="hl-principal" id="hl-valider-ctrl">Valider le contrôle</button>'
+      + '</div></div>';
+
+    document.getElementById('hl-retour-ctrl2').addEventListener('click', rendreControles);
+
+    Array.prototype.forEach.call(zone.querySelectorAll('[data-note]'), function(b) {
+      b.addEventListener('click', function() {
+        var cle = b.dataset.cleNote;
+        if (!relevesControle[cle]) relevesControle[cle] = {};
+        relevesControle[cle].appreciation = b.dataset.note;
+        rendreReleveControle();
+      });
+    });
+    Array.prototype.forEach.call(zone.querySelectorAll('[data-com]'), function(t) {
+      t.addEventListener('input', function() {
+        var cle = t.dataset.com;
+        if (!relevesControle[cle]) relevesControle[cle] = {};
+        relevesControle[cle].commentaire = t.value;
+      });
+    });
+    Array.prototype.forEach.call(zone.querySelectorAll('[data-photo]'), function(f) {
+      f.addEventListener('change', function() {
+        var cle = f.dataset.photo;
+        compresserPhotoHL(f.files[0]).then(function(photo) {
+          if (!relevesControle[cle]) relevesControle[cle] = {};
+          relevesControle[cle].photo = photo;
+          journaliser('photo du contrôle enregistrée (' + Math.round((photo ? photo.base64.length : 0) / 1024) + ' Ko)');
+          rendreReleveControle();
+        });
+      });
+    });
+
+    document.getElementById('hl-valider-ctrl').addEventListener('click', validerControle);
+  }
+
+  function validerControle() {
+    var cles = Object.keys(relevesControle).filter(function(c) { return relevesControle[c].appreciation; });
+    if (!cles.length) { alert('Notez au moins une tâche.'); return; }
+    // Memes verifications que le serveur, faites ici : un releve refuse
+    // au retour du reseau serait decouvert trop tard pour y retourner.
+    for (var i = 0; i < cles.length; i++) {
+      var r = relevesControle[cles[i]];
+      var ou = cles[i].split('||')[1] || cles[i];
+      if (commentaireObligatoire(r.appreciation) && !(r.commentaire || '').trim()) {
+        alert('Commentaire obligatoire pour « ' + ou +' ».'); return;
+      }
+      if (photoObligatoire(r.appreciation) && !r.photo) {
+        alert('Photo obligatoire pour « ' + ou + ' ».'); return;
+      }
+    }
+    var bouton = document.getElementById('hl-valider-ctrl');
+    bouton.disabled = true;
+    var evaluations = cles.map(function(c) {
+      var r = relevesControle[c];
+      var p = c.split('||');
+      return {
+        zone: p[0], tache: p[1] || '',
+        appreciation: r.appreciation,
+        commentaire: r.commentaire || '',
+        photoBase64: r.photo ? r.photo.base64 : null,
+        photoNom: r.photo ? r.photo.nom : null,
+        photoType: r.photo ? r.photo.type : null
+      };
+    });
+    mettreEnFile('terminerControleDetailleWeb', {
+      // Un contrôle non planifié reçoit un identifiant local : le serveur
+      // reconnaît le préfixe et crée la ligne au moment de la remontée.
+      id: controleEnCours.id || numeroUnique(),
+      client: controleEnCours.client,
+      agentResponsable: (instantane && instantane.nom) || '',
+      agentEvalue: controleEnCours.agentEvalue || '',
+      evaluations: evaluations,
+      commentaireGlobal: document.getElementById('hl-ctrl-global').value
+    }, 'contrôle ' + controleEnCours.client + ' (' + evaluations.length + ' tâche(s))')
+      .then(function() { controleEnCours = null; relevesControle = {}; rendreControles(); })
+      .catch(function() { bouton.disabled = false; });
+  }
+
+  /* ---- Photos : meme compression que dans l'application ----
+   * Sans elle, une photo de telephone pese plusieurs megaoctets et remplirait
+   * la reserve du telephone en quelques cliches. */
+  function compresserPhotoHL(fichier) {
+    if (!fichier) return Promise.resolve(null);
+    var type = String(fichier.type || '').toLowerCase();
+    if (type.indexOf('image/') !== 0) return Promise.resolve(null);
+    return new Promise(function(resoudre) {
+      var url = URL.createObjectURL(fichier);
+      var img = new Image();
+      img.onload = function() {
+        URL.revokeObjectURL(url);
+        try {
+          var facteur = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+          var toile = document.createElement('canvas');
+          toile.width = Math.round(img.naturalWidth * facteur);
+          toile.height = Math.round(img.naturalHeight * facteur);
+          var ctx = toile.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, toile.width, toile.height);
+          ctx.drawImage(img, 0, 0, toile.width, toile.height);
+          var donnees = toile.toDataURL('image/jpeg', 0.72);
+          resoudre({
+            base64: donnees.split(',')[1],
+            nom: String(fichier.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg',
+            type: 'image/jpeg'
+          });
+        } catch (e) {
+          journaliser('compression impossible : ' + e.message, 'alerte');
+          resoudre(null);
+        }
+      };
+      img.onerror = function() { URL.revokeObjectURL(url); resoudre(null); };
+      img.src = url;
+    });
+  }
+
+  /* ---- Bascule automatique ----
+   * Sans reseau, l'iframe Apps Script ne peut pas se charger : au lieu d'un
+   * bandeau rouge devant une page vide, on montre l'ecran de secours.
+   * Au retour, on recharge l'application, qui viendra reclamer la file. */
+  ecranHL = document.getElementById('hl-ecran');
+  document.getElementById('hl-reessayer').addEventListener('click', function() {
+    if (reseauDisponible()) { fermerEcranHL(); appli.src = appli.src; }
+    else { alert('Toujours pas de réseau.'); }
+  });
+  // Le bandeau rouge devient le moyen d'ouvrir l'ecran a la main, utile pour
+  // consulter le journal ou finir une saisie une fois le reseau revenu.
+  document.getElementById('hors-ligne').addEventListener('click', function() { ouvrirEcranHL(true); });
+
+  function majReseau() {
+    var enLigne = navigator.onLine;
+    horsLigne.style.display = enLigne ? 'none' : 'block';
+    if (!enLigne) {
+      journaliser('réseau perdu');
+      ouvrirEcranHL(false);
+    } else if (ecranHL && ecranHL.style.display === 'block' && !ecranHL.dataset.manuel) {
+      journaliser('réseau revenu — retour à l\u2019application');
+      fermerEcranHL();
+      appli.src = appli.src;
+    }
+    majEnteteHL();
+  }
+  window.addEventListener('online', function() { majReseau(); });
   window.addEventListener('offline', majReseau);
-  majReseau();
+  // L'etat de depart est lu apres le chargement de la reserve, pour que
+  // l'ecran ait deja ses donnees s'il doit s'afficher tout de suite.
+  chargerInstantane().then(chargerFile).then(function() {
+    journaliser('coquille v' + VERSION_COQUILLE + ' démarrée — '
+      + (instantane ? 'réserve présente (' + instantane.pris + ')' : 'aucune réserve')
+      + ', ' + fileEnMemoire.length + ' action(s) en attente');
+    majReseau();
+  });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(function(inscription) {
