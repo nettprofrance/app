@@ -67,6 +67,20 @@ body {
   #btn-plus-tard { background: #334155; color: #e2e8f0; }
   #etapes { display: none; margin-top: 12px; font-size: 14px; line-height: 1.5; color: #e2e8f0; }
   #etapes ol { margin: 6px 0 0; padding-left: 20px; }
+  /* Notification recue application ouverte : un bandeau dans l'application
+     plutot qu'une notification systeme par-dessus un ecran deja regarde. */
+  #bandeau-notif { position: fixed; left: 10px; right: 10px; top: calc(env(safe-area-inset-top) + 10px);
+    z-index: 300; display: flex; align-items: center; gap: 11px; background: #0f172a; color: #fff;
+    border-radius: 14px; padding: 12px 13px; box-shadow: 0 8px 26px rgba(15,23,42,.35);
+    transform: translateY(-140%); transition: transform .28s cubic-bezier(.2,.9,.3,1);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #bandeau-notif.visible { transform: translateY(0); }
+  #bandeau-notif img { width: 34px; height: 34px; border-radius: 8px; background: #fff; flex-shrink: 0; }
+  #bandeau-notif div { flex: 1; min-width: 0; }
+  #bandeau-notif strong { display: block; font-size: 14px; }
+  #bandeau-notif span { display: block; font-size: 12.5px; color: #cbd5e1; line-height: 1.35; margin-top: 1px; }
+  #bandeau-notif button { background: none; border: 0; color: #94a3b8; font-size: 16px; padding: 4px 2px; }
+
   /* ---- Ecran de secours hors connexion ---- */
   #hl-ecran { display: none; position: fixed; inset: 0; z-index: 35; background: #f8fafc; overflow-y: auto;
     padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 24px);
@@ -228,7 +242,7 @@ body {
 (function() {
   // Numero de version de la coquille : visible au demarrage, il evite d'avoir
   // a deviner si une mise a jour est bien arrivee sur le telephone.
-  var VERSION_COQUILLE = 14;
+  var VERSION_COQUILLE = 15;
 
   var appli = document.getElementById('appli');
   // L'application installee gardait en memoire l'ancienne page Apps Script.
@@ -515,6 +529,7 @@ body {
     if (m.nettpro === 'demander-jeton') {
       obtenirJetonNotification().then(function(j) {
         jetonAppareil = j;
+        ecouterNotificationsAuPremierPlan();
         tracer('jeton : ' + (j ? 'obtenu' : 'indisponible'));
         repondre('jeton', { jeton: j || '', appareil: navigator.userAgent.slice(0, 60) });
       });
@@ -540,6 +555,23 @@ body {
   // Quand l'ecran hors connexion a demande le scanner, c'est lui qui recoit
   // le code, et non l'application.
   var attenteScanHL = null;
+  var minuteurScanHL = null;
+
+  /* Pose l'aiguillage, avec une limite de temps. Meme si une sortie nous
+   * echappait un jour, il ne pourrait pas rester en place et detourner les
+   * scans suivants : au bout d'une minute, il se leve tout seul. */
+  function poserAttenteScanHL(suite) {
+    attenteScanHL = suite;
+    clearTimeout(minuteurScanHL);
+    minuteurScanHL = setTimeout(function() {
+      if (attenteScanHL) { attenteScanHL = null; tracer('aiguillage du scan expiré'); }
+    }, 60000);
+  }
+
+  function leverAttenteScanHL() {
+    attenteScanHL = null;
+    clearTimeout(minuteurScanHL);
+  }
 
   function ouvrirScanner() {
     var ecran = document.getElementById('scanner');
@@ -557,6 +589,10 @@ body {
       .catch(function(e) {
         tracer('caméra refusée : ' + ((e && e.name) || 'erreur'));
         etat.textContent = 'Caméra indisponible (' + ((e && e.name) || 'erreur') + ').';
+        // Meme regle qu'a la fermeture : on ne laisse jamais un aiguillage
+        // en place, et on ne repond a l'application que si c'est elle qui
+        // avait demande le scanner.
+        if (attenteScanHL) { leverAttenteScanHL(); tracer('scan hors ligne impossible'); return; }
         repondre('scanner-echec', { raison: (e && e.name) || 'erreur' });
       });
   }
@@ -572,6 +608,11 @@ body {
 
   document.getElementById('scanner-fermer').addEventListener('click', function() {
     fermerScanner();
+    // L'aiguillage vers l'ecran hors ligne doit etre efface meme quand on
+    // referme sans rien lire : sinon il restait pose et detournait le scan
+    // suivant demande par l'application. Le code etait lu, et il partait
+    // vers un ecran qui n'etait pas affiche.
+    if (attenteScanHL) { leverAttenteScanHL(); tracer('scan hors ligne annulé'); return; }
     repondre('scanner-annule');
   });
 
@@ -636,7 +677,7 @@ body {
       // traite sur place par l'ecran de secours.
       if (attenteScanHL) {
         var suite = attenteScanHL;
-        attenteScanHL = null;
+        leverAttenteScanHL();
         suite(code);
         return;
       }
@@ -650,6 +691,25 @@ body {
    * transmet a l'application, qui l'enregistre.
    */
   var jetonAppareil = null;
+
+  /* Attend que CE service worker soit actif. On ne peut pas se reposer sur
+   * navigator.serviceWorker.ready : il repond pour celui qui controle la
+   * page — sw.js — alors qu'on attend celui des notifications, qui vit dans
+   * sa propre portee et ne controle aucune page. */
+  function attendreWorkerActif(inscription) {
+    return new Promise(function(resoudre) {
+      if (inscription.active) { resoudre(inscription); return; }
+      var candidat = inscription.installing || inscription.waiting;
+      if (!candidat) { resoudre(inscription); return; }
+      var fini = false;
+      var terminer = function() { if (!fini) { fini = true; resoudre(inscription); } };
+      candidat.addEventListener('statechange', function() {
+        if (candidat.state === 'activated') terminer();
+      });
+      // Filet : on n'attend pas indefiniment un worker qui n'arrive pas.
+      setTimeout(terminer, 8000);
+    });
+  }
 
   function chargerFirebase() {
     if (window.firebase && window.firebase.messaging) return Promise.resolve(true);
@@ -683,14 +743,62 @@ body {
             appId: '1:530092719574:web:88a195305452dc5750b877'
           });
         }
-        return navigator.serviceWorker.register('firebase-messaging-sw.js').then(function(inscription) {
-          return firebase.messaging().getToken({
-            vapidKey: 'BJmRcSxnbP0eqL9txtl2BcGpS_PvLTFkVBmD8Y6-IZ18kKQrinFCdXqx43AUMlOvcuGwwwqLOv4tTsJp7M_o81s',
-            serviceWorkerRegistration: inscription
+        // Portee dediee, et c'est indispensable : un navigateur n'autorise
+        // qu'un seul service worker par portee. Sans ce 'fcm/', ce fichier et
+        // sw.js se disputaient la racine du site. sw.js gagnait — il prend la
+        // main tout de suite et s'empare des pages ouvertes — et les messages
+        // push lui etaient remis alors qu'il ne sait pas les afficher. Ils
+        // etaient donc jetes en silence, Firebase repondant malgre tout 200.
+        return navigator.serviceWorker.register('firebase-messaging-sw.js', { scope: 'fcm/' })
+          .then(attendreWorkerActif)
+          .then(function(inscription) {
+            tracer('service worker notifications : ' + inscription.scope);
+            return firebase.messaging().getToken({
+              vapidKey: 'BJmRcSxnbP0eqL9txtl2BcGpS_PvLTFkVBmD8Y6-IZ18kKQrinFCdXqx43AUMlOvcuGwwwqLOv4tTsJp7M_o81s',
+              serviceWorkerRegistration: inscription
+            });
           });
-        });
       } catch (e) { tracer('jeton : ' + e); return null; }
     }).catch(function(e) { tracer('jeton refuse : ' + e); return null; });
+  }
+
+  /* Application ouverte : Firebase n'affiche rien de lui-meme, il remet le
+   * message a la page. Sans ce gestionnaire, la notification arrivait et
+   * disparaissait sans laisser de trace — c'est ce qui se passait quand on
+   * appuyait sur "M'envoyer un test" depuis l'application. */
+  var ecouteAuPremierPlanPosee = false;
+  function ecouterNotificationsAuPremierPlan() {
+    try {
+      if (ecouteAuPremierPlanPosee) return;
+      if (!(window.firebase && firebase.apps && firebase.apps.length)) return;
+      ecouteAuPremierPlanPosee = true;
+      firebase.messaging().onMessage(function(charge) {
+        var n = (charge && charge.notification) || {};
+        tracer('notification au premier plan : ' + (n.title || ''));
+        afficherBandeauNotification(n.title || 'NETTPRO', n.body || '');
+      });
+    } catch (e) { tracer('ecoute premier plan impossible : ' + e); }
+  }
+
+  var minuteurBandeau = null;
+  function afficherBandeauNotification(titre, texte) {
+    var zone = document.getElementById('bandeau-notif');
+    if (!zone) {
+      zone = document.createElement('div');
+      zone.id = 'bandeau-notif';
+      document.body.appendChild(zone);
+    }
+    zone.innerHTML = '<img src="icon-192.png" alt="">'
+      + '<div><strong></strong><span></span></div>'
+      + '<button type="button" aria-label="Fermer">&#10005;</button>';
+    zone.querySelector('strong').textContent = titre;
+    zone.querySelector('span').textContent = texte;
+    zone.classList.add('visible');
+    if (navigator.vibrate) { try { navigator.vibrate([40, 60, 40]); } catch (e) {} }
+    var fermer = function() { zone.classList.remove('visible'); clearTimeout(minuteurBandeau); };
+    zone.querySelector('button').addEventListener('click', fermer);
+    clearTimeout(minuteurBandeau);
+    minuteurBandeau = setTimeout(fermer, 7000);
   }
 
   /* ===================================================================
@@ -1063,7 +1171,7 @@ body {
   }
 
   function scannerPourStock() {
-    attenteScanHL = function(code) {
+    poserAttenteScanHL(function(code) {
       var produit = produitParCodeBarres(code);
       if (produit) {
         articleChoisi = articlesStock().filter(function(a) { return a.id === produit.articleId; })[0] || null;
@@ -1074,7 +1182,7 @@ body {
         articleChoisi = null;
         rendreSaisieArticle({ codeBarres: code, inconnu: true });
       }
-    };
+    });
     ouvrirScanner();
   }
 
@@ -1610,6 +1718,13 @@ body {
   });
 
   if ('serviceWorker' in navigator) {
+    // Quel script controle la page : c'est exactement ce qui nous a manque
+    // pour comprendre pourquoi les notifications se taisaient.
+    navigator.serviceWorker.getRegistrations().then(function(liste) {
+      tracer('service workers : ' + liste.map(function(r) {
+        return (r.active && r.active.scriptURL || '?').split('/').pop() + ' @ ' + r.scope.split('/').slice(-2).join('/');
+      }).join(' | '));
+    }).catch(function() {});
     navigator.serviceWorker.register('sw.js').then(function(inscription) {
       // Verifie a chaque ouverture s'il existe une nouvelle version, et
       // recharge la page des qu'elle est prete : sans cela, l'application
